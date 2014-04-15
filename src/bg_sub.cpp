@@ -7,6 +7,7 @@
 //opencv
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/video/background_segm.hpp>
+#include <opencv\cv.hpp>
 //C
 #include <stdio.h>
 //C++
@@ -25,7 +26,14 @@ Ptr<BackgroundSubtractor> pMOG; //MOG Background subtractor
 Ptr<BackgroundSubtractor> pMOG2; //MOG2 Background subtractor
 int keyboard; //input from keyboard
 
-const double learning_rate = 0;
+const string windowname_Frame = "Frame";
+const string windowname_MOG = "FG Mask MOG";
+const string windowname_MOG2 = "FG Mask MOG 2";
+const string windowname_background = "background";
+
+
+
+const double learning_rate = 0.1;
 
 /** Function Headers */
 void help();
@@ -62,10 +70,18 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
+	int windowHeight = 350;
+	int windowWidth = 900;
+
     //create GUI windows
-    namedWindow("Frame");
-    namedWindow("FG Mask MOG");
-    namedWindow("FG Mask MOG 2");
+	namedWindow(windowname_Frame,CV_WINDOW_NORMAL);
+	resizeWindow(windowname_Frame,windowWidth,windowHeight);
+	namedWindow(windowname_MOG,CV_WINDOW_NORMAL);
+	resizeWindow(windowname_MOG,windowWidth,windowHeight);
+    namedWindow(windowname_MOG2,CV_WINDOW_NORMAL);
+	resizeWindow(windowname_MOG2,windowWidth,windowHeight);
+	namedWindow(windowname_background,CV_WINDOW_NORMAL);
+	resizeWindow(windowname_background,windowWidth,windowHeight);
 
     //create Background Subtractor objects
 	pMOG = new BackgroundSubtractorMOG(); //MOG approach
@@ -122,10 +138,10 @@ void processVideo(char* videoFilename) {
                 FONT_HERSHEY_SIMPLEX, 0.5 , cv::Scalar(0,0,0));
 		pMOG->getBackgroundImage(bgImage);
         //show the current frame and the fg masks
-        imshow("Frame", frame);
-        imshow("FG Mask MOG", fgMaskMOG);
-        imshow("FG Mask MOG 2", fgMaskMOG2);
-		imshow("background",bgImage);
+		imshow(windowname_background, frame);
+		imshow(windowname_MOG, fgMaskMOG);
+		imshow(windowname_MOG2, fgMaskMOG2);
+		imshow(windowname_background,bgImage);
         //get the input from the keyboard
         keyboard = waitKey( 30 );
     }
@@ -160,6 +176,32 @@ string createPrefix(int frameNr)
 	}
 	return output;
 }
+
+//void generate_Framenumber(const char* filename, int* frameNumber, string* nextFilename)
+//{
+//	string fn(filename);
+//	size_t index = fn.find_last_of("/");
+//    if(index == string::npos) {
+//        index = fn.find_last_of("\\");
+//    }
+//    size_t index2 = fn.find_last_of(".");
+//    string prefix = fn.substr(0,index+1);
+//    string suffix = fn.substr(index2);
+//    string frameNumberString = fn.substr(index+1, index2-index-1);
+//    istringstream iss(frameNumberString);
+//    int frameNumberI = 0;
+//    iss >> *frameNumber;
+//	ostringstream oss;
+//    oss << (frameNumber + 1);
+//	string nextFrameNumberString = /*oss.str();*/ createPrefix(*frameNumber+1);
+//    string nextFrameFilename = prefix + nextFrameNumberString + suffix;
+//	nextFilename = nextFrameFilename.c_str();
+//}
+//
+//string generate_nextFilename(int frameNumber)
+//{
+//	
+//}
 
 void processImages(char* fistFrameFilename) {
     //read the first file of the sequence
@@ -215,4 +257,10 @@ void processImages(char* fistFrameFilename) {
         //update the path of the current frame
         fn.assign(nextFrameFilename);
     }
+}
+
+
+void OptflowImage(char* filename)
+{
+	frame = imread(filename);
 }
