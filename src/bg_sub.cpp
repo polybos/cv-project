@@ -39,6 +39,7 @@ const double learning_rate = 0.1;
 void help();
 void processVideo(char* videoFilename);
 void processImages(char* firstFrameFilename);
+void OptflowImage(char* directory);
 
 void help()
 {
@@ -54,6 +55,38 @@ void help()
     << "--------------------------------------------------------------------------" << endl
     << endl;
 }
+
+vector<Mat> load_Images(const char* directory)
+{
+	vector<Mat> out;
+	std::stringstream ss;
+	ss << directory << "\\%010d.png";
+    cv::VideoCapture sequence(ss.str());
+    if (!sequence.isOpened())
+    {
+        std::cerr << "Failed to open image sequence!\n" << std::endl;
+		out.clear();
+		return out;
+    }
+
+    cv::Mat image;
+
+    //! Load all images sequentially into vector imgs
+    for(;;)
+    {
+        sequence >> image;
+
+        if(image.empty())
+        {
+            std::cout << "End of Sequence" << std::endl;
+            break;
+        }
+
+        out.push_back( image.clone() );
+    }
+	return out;
+}
+
 
 /**
  * @function main
@@ -74,14 +107,14 @@ int main(int argc, char* argv[])
 	int windowWidth = 900;
 
     //create GUI windows
-	namedWindow(windowname_Frame,CV_WINDOW_NORMAL);
+	/*namedWindow(windowname_Frame,CV_WINDOW_NORMAL);
 	resizeWindow(windowname_Frame,windowWidth,windowHeight);
 	namedWindow(windowname_MOG,CV_WINDOW_NORMAL);
 	resizeWindow(windowname_MOG,windowWidth,windowHeight);
     namedWindow(windowname_MOG2,CV_WINDOW_NORMAL);
 	resizeWindow(windowname_MOG2,windowWidth,windowHeight);
 	namedWindow(windowname_background,CV_WINDOW_NORMAL);
-	resizeWindow(windowname_background,windowWidth,windowHeight);
+	resizeWindow(windowname_background,windowWidth,windowHeight);*/
 
     //create Background Subtractor objects
 	pMOG = new BackgroundSubtractorMOG(); //MOG approach
@@ -93,7 +126,8 @@ int main(int argc, char* argv[])
     }
     else if(strcmp(argv[1], "-img") == 0) {
         //input data coming from a sequence of images
-        processImages(argv[2]);
+        //processImages(argv[2]);
+		OptflowImage(argv[2]);
     }
     else {
         //error in reading input parameters
@@ -260,7 +294,57 @@ void processImages(char* fistFrameFilename) {
 }
 
 
-void OptflowImage(char* filename)
+void OptflowImage(char* directory)
 {
-	frame = imread(filename);
+	const string windowname_optFlow = "Optical flow Test";
+
+	namedWindow(windowname_optFlow,CV_WINDOW_NORMAL);
+
+	vector<Mat> frames = load_Images(directory);
+	vector<Mat>::const_iterator frameIteraor = frames.begin();
+	Mat previousFrame = *frameIteraor;
+	Mat currentFrame = *(++frameIteraor);
+	Mat flow;
+	Mat prv;
+	Mat nxt;
+	for(;frameIteraor != frames.end(); ++frameIteraor)
+	{
+		imshow(windowname_optFlow,previousFrame);
+		previousFrame = currentFrame;
+		currentFrame = *frameIteraor;
+
+		cvtColor(previousFrame,prv, CV_BGR2GRAY);
+		cvtColor(currentFrame,nxt, CV_BGR2GRAY);
+		
+		calcOpticalFlowFarneback(prv, nxt, flow,0.5,1,3,15,7,1.5,OPTFLOW_FARNEBACK_GAUSSIAN);
+
+		//extraxt x and y channels
+		cv::Mat xy[2]; //X,Y
+		cv::split(flow, xy);
+
+		//calculate angle and magnitude
+		cv::Mat magnitude, angle;
+		cv::cartToPolar(xy[0], xy[1], magnitude, angle, true);
+
+		//translate magnitude to range [0;1]
+		double mag_max;
+		cv::minMaxLoc(magnitude,NULL,&mag_max,NULL);
+		magnitude.convertTo(magnitude, -1, 1.0/mag_max);
+
+		//build hsv image
+		cv::Mat _hsv[3], hsv;
+		_hsv[0] = angle;
+		_hsv[1] = Mat::ones((angle.size()).height,angle.size().width, CV_32F);
+		_hsv[2] = magnitude;
+		cv::merge(_hsv, 3, hsv);
+
+		//convert to BGR and show
+		Mat bgr;//CV_32FC3 matrix
+		cv::cvtColor(hsv, bgr, cv::COLOR_HSV2BGR);
+		cv::imshow(windowname_optFlow, bgr);
+
+		char key = (char)cv::waitKey(40);
+        if(key == 'q' || key == 'Q' || key == 27)
+            break;
+	}
 }
