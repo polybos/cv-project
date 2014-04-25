@@ -60,7 +60,7 @@ vector<Mat> load_Images(const char* directory)
 {
 	vector<Mat> out;
 	std::stringstream ss;
-	ss << directory << "\\%010d.png";
+	ss << directory << "\\%010d.png"/*"\\0000000099.png"*/;
     cv::VideoCapture sequence(ss.str());
     if (!sequence.isOpened())
     {
@@ -245,6 +245,7 @@ void processImages(char* fistFrameFilename) {
         cerr << "Unable to open first image frame: " << fistFrameFilename << endl;
         exit(EXIT_FAILURE);
     }
+	bgImage = Mat(frame.size().height,frame.size().width,CV_64F, cvScalar(0.));
     //current image filename
     string fn(fistFrameFilename);
     //read input data. ESC or 'q' for quitting
@@ -268,7 +269,9 @@ void processImages(char* fistFrameFilename) {
                   cv::Scalar(255,255,255), -1);
         putText(frame, frameNumberString.c_str(), cv::Point(15, 15),
                 FONT_HERSHEY_SIMPLEX, 0.5 , cv::Scalar(0,0,0));
-        pMOG2->getBackgroundImage(bgImage);
+
+        //pMOG->getBackgroundImage(bgImage);
+		pMOG2->getBackgroundImage(bgImage);
         //show the current frame and the fg masks
         imshow("Frame", frame);
         imshow("FG Mask MOG", fgMaskMOG);
@@ -297,10 +300,16 @@ void processImages(char* fistFrameFilename) {
 void OptflowImage(char* directory)
 {
 	const string windowname_optFlow = "Optical flow Test";
+	const string windowname_Frame = "Video Frame";
 
-	namedWindow(windowname_optFlow,CV_WINDOW_NORMAL);
+	namedWindow(windowname_optFlow,CV_WINDOW_KEEPRATIO);
+	namedWindow(windowname_Frame,CV_WINDOW_KEEPRATIO);
 
 	vector<Mat> frames = load_Images(directory);
+	if(frames.empty())
+	{
+		return;
+	}
 	vector<Mat>::const_iterator frameIteraor = frames.begin();
 	Mat previousFrame = *frameIteraor;
 	Mat currentFrame = *(++frameIteraor);
@@ -309,14 +318,16 @@ void OptflowImage(char* directory)
 	Mat nxt;
 	for(;frameIteraor != frames.end(); ++frameIteraor)
 	{
-		imshow(windowname_optFlow,previousFrame);
+		//imshow(windowname_optFlow,previousFrame);
+		imshow(windowname_Frame,previousFrame);
 		previousFrame = currentFrame;
 		currentFrame = *frameIteraor;
 
 		cvtColor(previousFrame,prv, CV_BGR2GRAY);
 		cvtColor(currentFrame,nxt, CV_BGR2GRAY);
 		
-		calcOpticalFlowFarneback(prv, nxt, flow,0.5,1,3,15,7,1.5,OPTFLOW_FARNEBACK_GAUSSIAN);
+		calcOpticalFlowFarneback(prv, nxt, flow,0.1,2,6,4,7,1.1,0);
+		//calcOpticalFlowFarneback(prv, nxt, flow,0.8,14,6,14,7,1.1,0);
 
 		//extraxt x and y channels
 		cv::Mat xy[2]; //X,Y
