@@ -11,6 +11,3 @@ add_executable( simple_gui simple_gui.cpp )
 target_link_libraries( simple_gui ${OpenCV_LIBS} )
 
 
-# !!! don#t use this if not on privateTest branch !!!
-add_subdirectory(Tests)
-
