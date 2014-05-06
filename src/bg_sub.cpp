@@ -107,18 +107,18 @@ int main(int argc, char* argv[])
 	int windowWidth = 900;
 
     //create GUI windows
-	/*namedWindow(windowname_Frame,CV_WINDOW_NORMAL);
+	namedWindow(windowname_Frame,CV_WINDOW_KEEPRATIO);
 	resizeWindow(windowname_Frame,windowWidth,windowHeight);
-	namedWindow(windowname_MOG,CV_WINDOW_NORMAL);
-	resizeWindow(windowname_MOG,windowWidth,windowHeight);
+	/*namedWindow(windowname_MOG,CV_WINDOW_KEEPRATIO);
+	resizeWindow(windowname_MOG,windowWidth,windowHeight);*/
     namedWindow(windowname_MOG2,CV_WINDOW_NORMAL);
 	resizeWindow(windowname_MOG2,windowWidth,windowHeight);
 	namedWindow(windowname_background,CV_WINDOW_NORMAL);
-	resizeWindow(windowname_background,windowWidth,windowHeight);*/
+	resizeWindow(windowname_background,windowWidth,windowHeight);
 
     //create Background Subtractor objects
-	pMOG = new BackgroundSubtractorMOG(); //MOG approach
-	pMOG2 = new BackgroundSubtractorMOG2(); //MOG2 approach
+	//pMOG = new BackgroundSubtractorMOG(); //MOG approach
+	pMOG2 = new BackgroundSubtractorMOG2(2,50,false); //MOG2 approach
 
     if(strcmp(argv[1], "-vid") == 0) {
         //input data coming from a video
@@ -126,8 +126,8 @@ int main(int argc, char* argv[])
     }
     else if(strcmp(argv[1], "-img") == 0) {
         //input data coming from a sequence of images
-        //processImages(argv[2]);
-		OptflowImage(argv[2]);
+        processImages(argv[2]);
+		//OptflowImage(argv[2]);
     }
     else {
         //error in reading input parameters
@@ -183,10 +183,6 @@ void processVideo(char* videoFilename) {
     capture.release();
 }
 
-/**
- * @function processImages
- */
-
 int numDigits(int number)
 {
     int digits = 0;
@@ -237,6 +233,47 @@ string createPrefix(int frameNr)
 //	
 //}
 
+void Dilation(InputArray src, OutputArray dst, int size,int kernelType, int iterations = 1)
+{
+	Mat element = getStructuringElement( kernelType,
+						Size( 2*size + 1, 2*size+1 ),
+						Point( size, size ) );
+	/// Apply the dilation operation 'iterations' times
+	for(int i = 0; i<iterations;++i)
+	{
+		if(i < 1)
+		{
+			dilate(src, dst, element);
+		}
+		else
+		{
+			dilate(dst, dst, element);
+		}
+	}
+}
+
+void Erosion(InputArray src, OutputArray dst, int size,int kernelType, int iterations = 1)
+{
+	Mat element = getStructuringElement( kernelType,
+						Size( 2*size + 1, 2*size+1 ),
+						Point( size, size ) );
+	/// Apply the erosion operation 'iterations' times
+	for(int i = 0; i<iterations;++i)
+	{
+		if(i < 1)
+		{
+			erode(src, dst, element);
+		}
+		else
+		{
+			erode(dst, dst, element);
+		}
+	}
+}
+
+/**
+ * @function processImages
+ */
 void processImages(char* fistFrameFilename) {
     //read the first file of the sequence
     frame = imread(fistFrameFilename);
@@ -245,15 +282,62 @@ void processImages(char* fistFrameFilename) {
         cerr << "Unable to open first image frame: " << fistFrameFilename << endl;
         exit(EXIT_FAILURE);
     }
+	Mat gray;
+	cvtColor(frame,gray,CV_BGR2GRAY);
+	const int maxCorners = 15;
+	const float qualityLevel = 0.001;
+	const float minDistance = 20;
+
+	Mat eroded(frame.size(),CV_8UC1);
+	Mat opened(frame.size(), CV_8UC1);
+	std::vector< cv::Point2f > corners;
+
 	bgImage = Mat(frame.size().height,frame.size().width,CV_64F, cvScalar(0.));
     //current image filename
     string fn(fistFrameFilename);
     //read input data. ESC or 'q' for quitting
     while( (char)keyboard != 'q' && (char)keyboard != 27 ){
-        //update the background model
-		pMOG->operator()(frame, fgMaskMOG, learning_rate);
+    
+		//update the background model
+		//pMOG->operator()(frame, fgMaskMOG, learning_rate);
 		pMOG2->operator()(frame, fgMaskMOG2, learning_rate);
-        //get the frame number and write it on the current frame
+		
+
+		const char* windowName_erode = "erded";
+		const char* windowName_opened = "opened";
+		namedWindow(windowName_erode,CV_WINDOW_KEEPRATIO);
+		namedWindow(windowName_opened, CV_WINDOW_KEEPRATIO);
+
+		int erosion_size = 2;
+		int morphIterations = 3;
+
+		//## Opening to refine mask
+		Erosion(fgMaskMOG2,eroded,erosion_size,MORPH_RECT);
+		cv::imshow(windowName_erode,eroded);
+		Dilation(eroded,opened,erosion_size,MORPH_ELLIPSE,morphIterations);
+		//Erosion(eroded,opened,erosion_size,MORPH_ELLIPSE,morphIterations);
+
+		//## ## Debugwindows for morphilogic operations
+		
+		
+		cv::imshow(windowName_opened,opened);
+
+		//## find features to track with LK optFlow
+		goodFeaturesToTrack(gray,corners, maxCorners, qualityLevel, minDistance,opened,3,false,0.04);
+
+		//## ## Debug output of found features
+		Mat cornerOutput = frame.clone();
+		const char* windowName_corners = "corners";
+		namedWindow(windowName_corners, CV_WINDOW_KEEPRATIO);
+
+		for( size_t i = 0; i < corners.size(); i++ )
+		{
+			cv::circle( cornerOutput, corners[i], 10, cv::Scalar( 255. ), -1 );
+		}
+
+		cv::imshow(windowName_corners, cornerOutput);
+
+        //## get the frame number and write it on the current frame
         size_t index = fn.find_last_of("/");
         if(index == string::npos) {
             index = fn.find_last_of("\\");
@@ -270,28 +354,30 @@ void processImages(char* fistFrameFilename) {
         putText(frame, frameNumberString.c_str(), cv::Point(15, 15),
                 FONT_HERSHEY_SIMPLEX, 0.5 , cv::Scalar(0,0,0));
 
-        //pMOG->getBackgroundImage(bgImage);
+		//## get Backgroundimage and show results
 		pMOG2->getBackgroundImage(bgImage);
-        //show the current frame and the fg masks
+        //## show the current frame and the fg masks
         imshow("Frame", frame);
-        imshow("FG Mask MOG", fgMaskMOG);
+       // imshow("FG Mask MOG", fgMaskMOG);
         imshow("FG Mask MOG 2", fgMaskMOG2);
 		imshow("background",bgImage);
-        //get the input from the keyboard
-        keyboard = waitKey( 30 );
-        //search for the next image in the sequence
+
+        //## get the input from the keyboard
+        keyboard = waitKey( 50 );
+
+        //## search for the next image in the sequence
         ostringstream oss;
         oss << (frameNumber + 1);
 		string nextFrameNumberString = /*oss.str();*/ createPrefix(frameNumber+1);
         string nextFrameFilename = prefix + nextFrameNumberString + suffix;
-        //read the next frame
+        //## read the next frame
         frame = imread(nextFrameFilename);
         if(!frame.data){
-            //error in opening the next image in the sequence
+            //## error in opening the next image in the sequence
             cerr << "Unable to open image frame: " << nextFrameFilename << endl;
             exit(EXIT_FAILURE);
         }
-        //update the path of the current frame
+        //## update the path of the current frame
         fn.assign(nextFrameFilename);
     }
 }

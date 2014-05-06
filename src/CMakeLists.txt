@@ -11,3 +11,5 @@ target_link_libraries( bg_sub ${OpenCV_LIBS} )
 # simple gui based on opencv highgui
 add_executable( simple_gui simple_gui.cpp )
 target_link_libraries( simple_gui ${OpenCV_LIBS} )
+
+
