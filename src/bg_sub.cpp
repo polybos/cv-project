@@ -302,27 +302,31 @@ void processImages(char* fistFrameFilename) {
 		//pMOG->operator()(frame, fgMaskMOG, learning_rate);
 		pMOG2->operator()(frame, fgMaskMOG2, learning_rate);
 		
-		int erosion_size = 13;
 
-		//## Opening to refine mask
-		//Erosion(fgMaskMOG2,eroded,2,MORPH_RECT);
-		Dilation(fgMaskMOG2,eroded,erosion_size,MORPH_RECT);
-		//erode(eroded,opened,element);
-		Erosion(eroded,opened,erosion_size,MORPH_RECT);
-
-		//## ## Debugwindows for morphilogic operations
-		/*const char* windowName_erode = "erded";
+		const char* windowName_erode = "erded";
 		const char* windowName_opened = "opened";
 		namedWindow(windowName_erode,CV_WINDOW_KEEPRATIO);
 		namedWindow(windowName_opened, CV_WINDOW_KEEPRATIO);
+
+		int erosion_size = 2;
+		int morphIterations = 3;
+
+		//## Opening to refine mask
+		Erosion(fgMaskMOG2,eroded,erosion_size,MORPH_RECT);
 		cv::imshow(windowName_erode,eroded);
-		cv::imshow(windowName_opened,opened);*/
+		Dilation(eroded,opened,erosion_size,MORPH_ELLIPSE,morphIterations);
+		//Erosion(eroded,opened,erosion_size,MORPH_ELLIPSE,morphIterations);
+
+		//## ## Debugwindows for morphilogic operations
+		
+		
+		cv::imshow(windowName_opened,opened);
 
 		//## find features to track with LK optFlow
 		goodFeaturesToTrack(gray,corners, maxCorners, qualityLevel, minDistance,opened,3,false,0.04);
 
 		//## ## Debug output of found features
-		Mat cornerOutput(frame);
+		Mat cornerOutput = frame.clone();
 		const char* windowName_corners = "corners";
 		namedWindow(windowName_corners, CV_WINDOW_KEEPRATIO);
 
