@@ -9,6 +9,8 @@ class Display
 public:
     Display();
 
+    bool shouldQuit;
+
     void setTrackingObject( Tracking tracking );
     void setClassifcationObject( Classification classification );
     void displayResult();
