@@ -7,7 +7,7 @@
 //opencv
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/video/background_segm.hpp>
-#include <opencv\cv.hpp>
+#include <opencv/cv.hpp>
 //C
 #include <stdio.h>
 //C++
@@ -29,12 +29,12 @@ const string windowname_MOG = "FG Mask MOG";
 const string windowname_MOG2 = "FG Mask MOG 2";
 const string windowname_background = "background";
 
-
-
 const double learning_rate = 0.1;
 
 /** Function Headers */
 void help();
+void showImageSequence(string fn);
+void showImageSequence2(string fn);
 void processVideo(char* videoFilename);
 void processImages(char* firstFrameFilename);
 void OptflowImage(char* directory);
@@ -58,7 +58,7 @@ vector<Mat> load_Images(const char* directory)
 {
 	vector<Mat> out;
 	std::stringstream ss;
-	ss << directory << "\\%010d.png"/*"\\0000000099.png"*/;
+	ss << directory /*<< "\\%010d.png"/*"\\0000000099.png"*/;
     cv::VideoCapture sequence(ss.str());
     if (!sequence.isOpened())
     {
@@ -68,7 +68,6 @@ vector<Mat> load_Images(const char* directory)
     }
 
     cv::Mat image;
-
     //! Load all images sequentially into vector imgs
     for(;;)
     {
@@ -121,7 +120,10 @@ int main(int argc, char* argv[])
     }
     else if(strcmp(argv[1], "-img") == 0) {
         //input data coming from a sequence of images
-        processImages(argv[2]);
+		string fn;
+		fn.assign(argv[2]);
+		processImages(argv[2]);
+		//showImageSequence2(fn);
 		//OptflowImage(argv[2]);
     }
     else {
@@ -199,32 +201,6 @@ string createPrefix(int frameNr)
 	return output;
 }
 
-//void generate_Framenumber(const char* filename, int* frameNumber, string* nextFilename)
-//{
-//	string fn(filename);
-//	size_t index = fn.find_last_of("/");
-//    if(index == string::npos) {
-//        index = fn.find_last_of("\\");
-//    }
-//    size_t index2 = fn.find_last_of(".");
-//    string prefix = fn.substr(0,index+1);
-//    string suffix = fn.substr(index2);
-//    string frameNumberString = fn.substr(index+1, index2-index-1);
-//    istringstream iss(frameNumberString);
-//    int frameNumberI = 0;
-//    iss >> *frameNumber;
-//	ostringstream oss;
-//    oss << (frameNumber + 1);
-//	string nextFrameNumberString = /*oss.str();*/ createPrefix(*frameNumber+1);
-//    string nextFrameFilename = prefix + nextFrameNumberString + suffix;
-//	nextFilename = nextFrameFilename.c_str();
-//}
-//
-//string generate_nextFilename(int frameNumber)
-//{
-//	
-//}
-
 // returns a pointer to a vector with filenmame infos of filename fn
 // vector consits of prefix, suffix and filenumber
 vector<string>* filename_getInfos(string fn)
@@ -239,6 +215,19 @@ vector<string>* filename_getInfos(string fn)
     out->push_back(fn.substr(index2));
 	out->push_back(fn.substr(index+1, index2-index-1));
 	return out;
+}
+
+/// draws bounding boxes on current frame based on the mask in
+void drawBoundingBoxes(Mat& in)
+{
+	vector<Vec4i> hierarchy;
+	vector<vector<Point>> contours;
+	findContours(in,contours,hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+	for(size_t i = 0; i < contours.size(); ++i)
+	{
+		Rect bb = boundingRect(contours[i]);
+		cv::rectangle(frame,bb,Scalar(0,255,0),4);
+	}
 }
 
 void drawFrameNumber(string fn)
@@ -273,18 +262,69 @@ string filename_getNext(string fn)
     return prefix + nextFrameNumberString + suffix;
 }
 
+void showImageSequence(string fn)
+{
+	bool end = false;
+	frame = imread(fn.c_str());
+	if(!frame.data){
+		//error in opening the first image
+		cerr << "Unable to open first image frame: " << fn.c_str() << endl;
+		exit(EXIT_FAILURE);
+	}
+	while(!end)
+	{
+		string nextFrameFilename = filename_getNext(fn);
+		//## read the next frame
+		frame = imread(nextFrameFilename);
+		if(!frame.data){
+			//## error in opening the next image in the sequence
+			cerr << "Unable to open image frame: " << nextFrameFilename << endl;
+			end = true;
+			break;
+		}
+		namedWindow("imageseq",CV_WINDOW_KEEPRATIO);
+		resizeWindow("imageseq",1114,410);
+		imshow("imageseq",frame);
+		keyboard = waitKey(1);
+		if((char)keyboard == 27)
+		{
+			end = true;
+		}
+		//## update the path of the current frame
+		fn.assign(nextFrameFilename);
+	}
+}
+
+void showImageSequence2(string fn)
+{
+	vector<Mat> frames = load_Images(fn.c_str());
+	if(frames.empty())
+	{
+		return;
+	}
+	vector<Mat>::const_iterator frameIteraor = frames.begin();
+	for(;frameIteraor != frames.end(); ++frameIteraor)
+	{
+		frame = *frameIteraor;
+		namedWindow("imageseq",CV_WINDOW_KEEPRATIO);
+		resizeWindow("imageseq",1114,410);
+		imshow("imageseq",frame);
+		keyboard = waitKey(1);
+		if((char)keyboard == 27)
+		{
+			break;
+		}
+	}
+}
+
 void findBigBlobs(InputOutputArray image, double thresh = 90)
 {
-	// threashold specifying minimum area of a blob
-
 	vector<vector<Point>> contours;
 	vector<Vec4i> hierarchy;
 	vector<int> small_blobs;
 	double contour_area;
-	Mat temp_image;
-	
-	// find all contours in the binary image
 
+	// find all contours in the binary image
 	findContours(image, contours, hierarchy, CV_RETR_CCOMP,
 													  CV_CHAIN_APPROX_SIMPLE);
 
@@ -386,70 +426,92 @@ void processImages(char* fistFrameFilename) {
 	Mat gray;
 	cvtColor(frame,gray,CV_BGR2GRAY);
 
+	//declare eroded and opened masks
 	Mat eroded(frame.size(),CV_8UC1);
 	Mat opened(frame.size(), CV_8UC1);
 
+	//declare Mat for Background reference
 	bgImage = Mat(frame.size().height,frame.size().width,CV_64F, cvScalar(0.));
-    //current image filename
+    
+	//current image filename
     string fn(fistFrameFilename);
-
 
 	//############ Frame Loop ###############
     //read input data. ESC or 'q' for quitting
+	bool paused = false;
     while( (char)keyboard != 'q' && (char)keyboard != 27 ){
 		
-		//########  mask generation and refinement  ###############
-		//update the background model
-		pMOG2->operator()(frame, fgMaskMOG2, learning_rate);
+		if(!paused)
+		{
+			//########  mask generation and refinement  ###############
+			//update the background model
+			pMOG2->operator()(frame, fgMaskMOG2, learning_rate);
 		
-		//## ## Debugwindows for morphilogic operations	
-		const char* windowName_erode = "erded";
-		namedWindow(windowName_erode,CV_WINDOW_KEEPRATIO);
-		const char* windowName_opened = "opened";
-		namedWindow(windowName_opened, CV_WINDOW_KEEPRATIO);
+			//## ## Debugwindows for morphilogic operations	
+			const char* windowName_erode = "erded";
+			namedWindow(windowName_erode,CV_WINDOW_KEEPRATIO);
+			const char* windowName_opened = "opened";
+			namedWindow(windowName_opened, CV_WINDOW_KEEPRATIO);
 
-		int erosion_size = 5;
-		int morphIterations = 7;
+			int erosion_size = 2;
+			int morphIterations = 4;
 
-		//## Opening to refine mask
-		//Erosion(fgMaskMOG2,eroded,erosion_size,MORPH_RECT);
-		cv::imshow(windowName_erode,eroded);
-		/*Dilation(eroded,opened,erosion_size,MORPH_ELLIPSE,morphIterations);
-		Erosion(eroded,opened,erosion_size,MORPH_ELLIPSE,morphIterations);*/
+			//## Opening to refine mask
+			//Erosion(fgMaskMOG2,eroded,erosion_size,MORPH_RECT);
+			cv::imshow(windowName_erode,eroded);
+			/*Dilation(eroded,opened,erosion_size,MORPH_ELLIPSE,morphIterations);
+			Erosion(eroded,opened,erosion_size,MORPH_ELLIPSE,morphIterations);*/
 		
-		opened = fgMaskMOG2.clone();
-		findBigBlobs(opened);
-		Dilation(opened,opened,erosion_size,MORPH_ELLIPSE,morphIterations);
-		Erosion(opened,opened,erosion_size,MORPH_ELLIPSE,morphIterations);
+			opened = fgMaskMOG2.clone();
+			//findBigBlobs(opened);
+			//Erosion(fgMaskMOG2,eroded,1,MORPH_RECT);
+			medianBlur(fgMaskMOG2, eroded,3);
+			findBigBlobs(eroded,110);
+			Dilation(eroded,opened,erosion_size,MORPH_ELLIPSE,morphIterations);
+			Erosion(opened,opened,erosion_size,MORPH_ELLIPSE,morphIterations);
 
-		cv::imshow(windowName_opened,opened);
+			imshow(windowName_opened,opened);
+			imshow(windowName_erode,eroded);
+			drawBoundingBoxes(opened);
 
+			//########### Tracking ################
+			track_LK(gray,opened);
 
-		//########### Tracking ################
-		track_LK(gray,opened);
+			//## get Backgroundimage and show results
+			pMOG2->getBackgroundImage(bgImage);
+			drawFrameNumber(fn);
+			//## show the current frame and the fg masks
+			imshow("Frame", frame);
+		   // imshow("FG Mask MOG", fgMaskMOG);
+			imshow("FG Mask MOG 2", fgMaskMOG2);
+			imshow("background",bgImage);
 
-		//## get Backgroundimage and show results
-		pMOG2->getBackgroundImage(bgImage);
-		drawFrameNumber(fn);
-        //## show the current frame and the fg masks
-        imshow("Frame", frame);
-       // imshow("FG Mask MOG", fgMaskMOG);
-        imshow("FG Mask MOG 2", fgMaskMOG2);
-		imshow("background",bgImage);
+			//## get the input from the keyboard
+			keyboard = waitKey( 50 );
 
-        //## get the input from the keyboard
-        keyboard = waitKey( 50 );
-
-		string nextFrameFilename = filename_getNext(fn);
-        //## read the next frame
-        frame = imread(nextFrameFilename);
-        if(!frame.data){
-            //## error in opening the next image in the sequence
-            cerr << "Unable to open image frame: " << nextFrameFilename << endl;
-            exit(EXIT_FAILURE);
-        }
-        //## update the path of the current frame
-        fn.assign(nextFrameFilename);
+			string nextFrameFilename = filename_getNext(fn);
+			//## read the next frame
+			frame = imread(nextFrameFilename);
+			if(!frame.data){
+				//## error in opening the next image in the sequence
+				cerr << "Unable to open image frame: " << nextFrameFilename << endl;
+				exit(EXIT_FAILURE);
+			}
+			//## update the path of the current frame
+			fn.assign(nextFrameFilename);
+		}
+		else
+		{
+			keyboard = waitKey( 50 );
+			rectangle(frame, cv::Point(10, 2), cv::Point(100,20),
+                cv::Scalar(255,0,0), -1);
+			imshow("Frame",frame);
+		}
+		
+		if(keyboard == 'p')
+		{
+			paused = !paused;
+		}
     }
 }
 
