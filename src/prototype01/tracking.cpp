@@ -1,9 +1,11 @@
 #include "tracking.h"
+#include <stdio.h>
 
 using namespace cv;
 
 Tracking::Tracking() : 
-	learning_rate(0.1)
+	learning_rate(0.1),
+	mog2BackgoundSubstractor(new BackgroundSubtractorMOG2(100,16,false))
 {
 }
 
@@ -96,6 +98,7 @@ void Tracking::drawBoundingBoxes( Mat& drawOnImage )
 	}
 }
 
+//############	public	#####################
 
 void Tracking::track_LK( InputArray gray, InputArray mask )
 {
@@ -109,6 +112,15 @@ void Tracking::track_LK( InputArray gray, InputArray mask )
 
 std::vector<cv::Rect> Tracking::getBoundariesOfMovement()
 {
+	if(m_fileLoader == NULL)
+	{
+		std::cerr << "No FileLoader assinged to Tracker";
+		return vector<cv::Rect>();
+	}
+	else
+	{
+		currentFrame = m_fileLoader->getCurrentImage();
+	}
 	//########## declarations ################
 	Mat gray;
 	cvtColor(currentFrame,gray,CV_BGR2GRAY);
@@ -194,5 +206,10 @@ void Tracking::displayDebugWindows()
 	imshow(windowName_opened,opened);
 	imshow(windowName_erode,eroded);
 	drawBoundingBoxes(opened);*/
+}
+
+void Tracking::setFileLoader( FileLoader* fileLoader )
+{
+	m_fileLoader = fileLoader;
 }
 
