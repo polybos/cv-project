@@ -1,0 +1,28 @@
+steps
+-----
+
+(http://note.sonots.com/SciSoftware/haartraining.html#wf43989b)
+
+
+precompiled binaries, needed for this steps are located at:
+/usr/bin/opencv_createsamples
+/usr/bin/opencv_haartraining
+/usr/bin/opencv_performance
+/usr/bin/opencv_traincascade
+
+# Create training samples
+
+* with distortion:
+$ createsamples -img face.png -num 10 -bg negatives.dat -vec samples.vec -maxxangle 0.6 -maxyangle 0 -maxzangle 0.3 -maxidev 100 -bgcolor 0 -bgthresh 0 -w 20 -h 20
+
+
+* How to create negatives.dat?:
+$ find ../../data/negatives/ -name '*.jpg' > negatives.dat
+
+# Haar Training
+
+$ haartraining -data haarcascade -vec samples.vec -bg negatives.dat -nstages 20 -nsplits 2 -minhitrate 0.999 -maxfalsealarm 0.5 -npos 7000 -nneg 3019 -w 20 -h 20 -nonsym -mem 512 -mode ALL
+
+# Performance evaluation
+
+$ performance -data haarcascade.xml -info tests.dat -ni
