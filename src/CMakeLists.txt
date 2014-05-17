@@ -1,3 +1,4 @@
+add_subdirectory( prototype01  )
 add_subdirectory( classification_test )
 
 include_directories( ${OpenCV_INCLUDE_DIRS} )
