@@ -11,7 +11,7 @@ Tracking::Tracking() :
 
 void Tracking::findBigBlobs(InputOutputArray image, double thresh)
 {
-	vector<vector<Point>> contours;
+    vector<vector <Point> > contours;
 	vector<Vec4i> hierarchy;
 	vector<int> small_blobs;
 	double contour_area;
@@ -80,7 +80,7 @@ void Tracking::calcBoundingBoxes( Mat& binaryIn )
 {
 	boundingBoxes.clear();
 	vector<Vec4i> hierarchy;
-	vector<vector<Point>> contours;
+    vector<vector <Point> > contours;
 	findContours(binaryIn,contours,hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
 	for(size_t i = 0; i < contours.size(); ++i)
 	{

@@ -11,11 +11,15 @@ public:
 
     bool shouldQuit;
 
-    void setTrackingObject( Tracking tracking );
-    void setClassifcationObject( Classification classification );
+    void setTrackingObject( Tracking *tracking );
+    void setClassifcationObject( Classification *classification );
     void displayResult();
-//    void displayTrackingOutput();
+    void displayTrackingOutput();
 //    void displayClassificationOutput();
+
+private:
+    Tracking *m_tracking;
+    Classification *m_classification;
 };
 
 #endif // DISPLAY_H

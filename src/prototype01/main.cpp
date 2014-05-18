@@ -24,7 +24,7 @@ int main( int argc, char** argv )
 
     // Step2: Let objects know each other ...
     m_tracking->setFileLoader( m_fileLoader );
-//    m_classification->setFileLoader( m_fileLoader );
+    m_classification->setFileLoader( m_fileLoader );
 //    m_display->setTrackingObject( m_tracking );
 //    m_display->setClassifcationObject( m_classification );
 
@@ -35,19 +35,20 @@ int main( int argc, char** argv )
     {
         // Step3: Calculate tracking of moved objects
 		boundaries = m_tracking->getBoundariesOfMovement();
-		//debug output
-		m_tracking->displayDebugWindows();
+        //debug output
+        m_tracking->displayDebugWindows();
 
         // Step4: Calculate classification of tracked objects
-        // ToDo!
+        m_classification->setBoundariesOfMovement( boundaries );
+        m_classification->runClassifier();
 
         // Step5: Display results
-        //m_display->displayResult();
+//        m_display->displayResult();
+//        m_display->displayTrackingOutput();
 
         // Switch to next image for next round
 		keyboard = cv::waitKey(50);
         m_fileLoader->step();
-
     }
 
     // Some cleanup
