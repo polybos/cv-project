@@ -11,15 +11,20 @@ public:
 
     bool shouldQuit;
 
+    void setFileLoader( FileLoader *fileLoader );
     void setTrackingObject( Tracking *tracking );
-    void setClassifcationObject( Classification *classification );
+    void setClassificationObject( Classification *classification );
+    void setClassificationResults( std::vector< std::pair<cv::Rect, TrafficClass> > results );
     void displayResult();
     void displayTrackingOutput();
 //    void displayClassificationOutput();
 
 private:
+    FileLoader *m_fileLoader;
     Tracking *m_tracking;
     Classification *m_classification;
+
+    std::vector< std::pair<cv::Rect, TrafficClass> > m_results;
 };
 
 #endif // DISPLAY_H

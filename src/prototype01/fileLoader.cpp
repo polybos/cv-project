@@ -42,7 +42,12 @@ void FileLoader::setSequencePosition(unsigned int pos)
 
 cv::Mat FileLoader::getCurrentImage()
 {
-    return m_allImgs[ m_pos ].clone();
+    if( m_size > 0 )
+    {
+        return m_allImgs[ m_pos ].clone();
+    }
+    else
+        return cv::Mat();
 }
 
 void FileLoader::step()

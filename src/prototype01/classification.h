@@ -27,7 +27,7 @@ public:
     void setFileLoader( FileLoader *fileLoader );
     void setBoundariesOfMovement( std::vector<cv::Rect> &boundaries );
     TrafficClass getTrafficClassOfBoundary( cv::Rect boundary );
-    std::vector< std::pair<cv::Rect, TrafficClass> > getTrafficClasses();
+    std::vector< std::pair<cv::Rect, TrafficClass> >  getTrafficClasses();
     void displayDebugWindows();
 
     // Main function, which tries to run classifiers
@@ -37,7 +37,7 @@ public:
 private:
     FileLoader *m_fileLoader;
     std::vector<cv::Rect> m_boundaries;
-    std::map<cv::Rect, TrafficClass> m_results;
+    std::vector< std::pair<cv::Rect, TrafficClass> >  m_results;
     std::string m_cascadePathCar;
     std::string m_cascadePathHuman;
     std::string m_cascadePathBicycle;
