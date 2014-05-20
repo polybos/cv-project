@@ -37,15 +37,15 @@ int main( int argc, char** argv )
         // Step3: Calculate tracking of moved objects
 		boundaries = m_tracking->getBoundariesOfMovement();
         //debug output
-//        m_tracking->displayDebugWindows();
+        m_tracking->displayDebugWindows();
 
         // Step4: Calculate classification of tracked objects
-        m_classification->setBoundariesOfMovement( boundaries );
-        m_classification->runClassifier();
+//        m_classification->setBoundariesOfMovement( boundaries );
+//        m_classification->runClassifier();
 
         // Step5: Display results
         m_display->setClassificationResults( m_classification->getTrafficClasses() );
-        m_display->displayResult();
+//        m_display->displayResult();
 //        m_display->displayTrackingOutput();
 
         // Switch to next image for next round

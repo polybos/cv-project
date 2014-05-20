@@ -41,9 +41,9 @@ private:
     std::string m_cascadePathCar;
     std::string m_cascadePathHuman;
     std::string m_cascadePathBicycle;
-    DetectionBasedTracker m_dbt_car;
-    DetectionBasedTracker m_dbt_human;
-    DetectionBasedTracker m_dbt_bicycle;
+//    DetectionBasedTracker m_dbt_car;
+//    DetectionBasedTracker m_dbt_human;
+//    DetectionBasedTracker m_dbt_bicycle;
     cv::Mat m_currentImage;
 };
 
