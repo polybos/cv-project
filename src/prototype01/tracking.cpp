@@ -6,7 +6,7 @@ using namespace cv;
 Tracking::Tracking() : 
 	learning_rate(0.1),
 	mog2BackgoundSubstractor(new BackgroundSubtractorMOG2(100,16,false)),
-	m_contours(vector<vector<Point>>())
+    m_contours(vector< vector<Point> >())
 {
 }
 
