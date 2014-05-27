@@ -5,6 +5,8 @@
 #include "classification.h"
 #include "display.h"
 
+void waitForKeyboard(int &keyboard, bool &stepMode);
+
 int main( int argc, char** argv )
 {
     // We need at least 1 given parameter
@@ -17,6 +19,7 @@ int main( int argc, char** argv )
     Display *m_display = new Display();
 
 	std::vector<cv::Rect> boundaries;
+    bool stepMode = true;
 
     // Step1: Load files of given directory
     std::string path = argv[1];
@@ -48,8 +51,9 @@ int main( int argc, char** argv )
 //        m_display->displayResult();
 //        m_display->displayTrackingOutput();
 
+        waitForKeyboard( keyboard, stepMode );
+
         // Switch to next image for next round
-        keyboard = cv::waitKey(50);
         m_fileLoader->step();
     }
 
@@ -60,4 +64,26 @@ int main( int argc, char** argv )
     delete( m_display );
 
     return 0;
+}
+
+
+
+void waitForKeyboard(int &keyboard, bool &stepMode)
+{
+    if( !stepMode )
+    {
+        keyboard = cv::waitKey(50);
+        if ( keyboard == 32 )
+        {
+            stepMode = true;
+        }
+    }
+    else
+    {
+        keyboard = cv::waitKey(0);
+        if( keyboard == 32 )
+        {
+            stepMode = false;
+        }
+    }
 }
