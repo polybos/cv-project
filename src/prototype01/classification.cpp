@@ -2,10 +2,11 @@
 
 #include <iostream>
 
-#include <opencv2/imgproc/imgproc.hpp>  // Gaussian Blur
+#include <opencv2/imgproc/imgproc.hpp>  // Gaussian Blur, Equalize Histogram
 #include <opencv2/core/core.hpp>        // Basic OpenCV structures (cv::Mat, Scalar)
 #include <opencv2/highgui/highgui.hpp>  // OpenCV window I/O
 #include <opencv2/features2d/features2d.hpp>
+
 
 Classification::Classification()
     :m_fileLoader()
@@ -14,9 +15,9 @@ Classification::Classification()
     ,m_cascadePathCar( std::string("haarcascades/car.xml") )
     ,m_cascadePathHuman( std::string("haarcascades/human.xml") )
     ,m_cascadePathBicycle( std::string("haarcascades/bicycle.xml") )
-//    ,m_dbt_car( cv::DetectionBasedTracker( m_cascadePathCar, cv::DetectionBasedTracker::Parameters() ) )
-//    ,m_dbt_human( cv::DetectionBasedTracker( m_cascadePathHuman, cv::DetectionBasedTracker::Parameters() ) )
-//    ,m_dbt_bicycle( cv::DetectionBasedTracker( m_cascadePathBicycle, cv::DetectionBasedTracker::Parameters() ) )
+    ,m_cc_car( cv::CascadeClassifier( ) )
+    ,m_cc_human( cv::CascadeClassifier( ) )
+    ,m_cc_bicycle( cv::CascadeClassifier( ) )
     ,m_currentImage()
 
 {
@@ -24,29 +25,19 @@ Classification::Classification()
     std::cout << "m_cascadePathHuman:" << m_cascadePathHuman << std::endl;
     std::cout << "m_cascadePathBicycle:" << m_cascadePathBicycle << std::endl;
 
+    if( !m_cc_car.load( m_cascadePathCar ) )
+        std::cerr << "Error: Could not load cascade file: " << m_cascadePathCar     << std::endl;
+    if( !m_cc_human.load( m_cascadePathHuman ) )
+        std::cerr << "Error: Could not load cascade file: " << m_cascadePathHuman   << std::endl;
+    if( !m_cc_bicycle.load( m_cascadePathBicycle ) )
+        std::cerr << "Error: Could not load cascade file: " << m_cascadePathBicycle << std::endl;
 
-//    cv::DetectionBasedTracker::Parameters param;
-//    param.maxObjectSize = 400;
-//    param.maxTrackLifetime = 20;
-//    param.minDetectionPeriod = 7;
-//    param.minNeighbors = 3;
-//    param.minObjectSize = 20;
-//    param.scaleFactor = 1.1;
 
-//    m_dbt_car.setParameters( param );
-//    m_dbt_human.setParameters( param );
-//    m_dbt_bicycle.setParameters( param );
-
-//    m_dbt_car.run();
-//    m_dbt_human.run();
-//    m_dbt_bicycle.run();
 }
 
 Classification::~Classification()
 {
-//    m_dbt_car.stop();
-//    m_dbt_human.stop();
-//    m_dbt_bicycle.stop();
+
 }
 
 void Classification::setFileLoader( FileLoader *fileLoader )
@@ -61,43 +52,37 @@ void Classification::setBoundariesOfMovement( std::vector<cv::Rect> &boundaries 
 
 TrafficClass Classification::getTrafficClassOfBoundary( cv::Rect boundary )
 {
-//    cv::Mat m_currentImage = m_fileLoader->getCurrentImage();
-//    cv::Mat roiMat = m_currentImage;
-//    cv::Mat gray;
-//    cv::cvtColor( roiMat, gray, cv::COLOR_BGR2GRAY );
+    cv::Mat m_currentImage = m_fileLoader->getCurrentImage();
+    cv::Mat roiMat = m_currentImage( boundary );
+    cv::Mat gray;
+    cv::cvtColor( roiMat, gray, cv::COLOR_BGR2GRAY );
+    cv::equalizeHist( gray, gray );
 
 
-//    m_dbt_car.process( gray );
-//    std::vector< cv::Rect > detected_cars;
-//    m_dbt_car.getObjects( detected_cars );
+    std::vector< cv::Rect> detected_bicycles;
+    m_cc_human.detectMultiScale( gray, detected_bicycles, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, cv::Size(30, 30) );
+    if( detected_bicycles.size() >= 1 )
+    {
+        std::cout << "Bicycle!!!!" << std::endl;
+        return bicycle;
+    }
 
-//    if( detected_cars.size() >= 1 )
-//    {
-//        std::cout << "Car!!!!" << std::endl;
-//        return car;
-//    }
+    std::vector< cv::Rect > detected_human;
+    m_cc_human.detectMultiScale( gray, detected_human, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, cv::Size(30, 30) );
+    if( detected_human.size() >= 1 )
+    {
+        std::cout << "Human!!!!" << std::endl;
+        return human;
+    }
 
+    std::vector< cv::Rect > detected_cars;
+    m_cc_car.detectMultiScale( gray, detected_cars, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, cv::Size(30, 30) );
+    if( detected_cars.size() >= 1 )
+    {
+        std::cout << "Car!!!!" << std::endl;
+        return car;
+    }
 
-//    m_dbt_human.process( gray );
-//    std::vector< cv::Rect > detected_human;
-//    m_dbt_human.getObjects( detected_human );
-
-//    if( detected_human.size() >= 1 )
-//    {
-//        std::cout << "Human!!!!" << std::endl;
-//        return human;
-//    }
-
-
-//    m_dbt_bicycle.process( gray );
-//    std::vector< cv::Rect> detected_bicycles;
-//    m_dbt_bicycle.getObjects( detected_bicycles );
-
-//    if( detected_bicycles.size() >= 1 )
-//    {
-//        std::cout << "Bicycle!!!!" << std::endl;
-//        return bicycle;
-//    }
 
     std::cout << "Undefined!!!!" << std::endl;
     return undefined;

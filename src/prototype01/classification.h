@@ -6,7 +6,7 @@
 #include <string>
 
 #include <opencv2/core/core.hpp>
-#include <opencv2/contrib/detection_based_tracker.hpp>
+#include <opencv2/objdetect/objdetect.hpp>
 
 #include "fileLoader.h"
 
@@ -41,9 +41,9 @@ private:
     std::string m_cascadePathCar;
     std::string m_cascadePathHuman;
     std::string m_cascadePathBicycle;
-//    DetectionBasedTracker m_dbt_car;
-//    DetectionBasedTracker m_dbt_human;
-//    DetectionBasedTracker m_dbt_bicycle;
+    cv::CascadeClassifier m_cc_car;
+    cv::CascadeClassifier m_cc_human;
+    cv::CascadeClassifier m_cc_bicycle;
     cv::Mat m_currentImage;
 };
 

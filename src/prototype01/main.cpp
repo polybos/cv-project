@@ -43,8 +43,8 @@ int main( int argc, char** argv )
         m_tracking->displayDebugWindows();
 
         // Step4: Calculate classification of tracked objects
-//        m_classification->setBoundariesOfMovement( boundaries );
-//        m_classification->runClassifier();
+        m_classification->setBoundariesOfMovement( boundaries );
+        m_classification->runClassifier();
 
         // Step5: Display results
         m_display->setClassificationResults( m_classification->getTrafficClasses() );
