@@ -5,7 +5,8 @@ using namespace cv;
 
 Tracking::Tracking() : 
 	learning_rate(0.1),
-	mog2BackgoundSubstractor(new BackgroundSubtractorMOG2(100,16,false))
+	mog2BackgoundSubstractor(new BackgroundSubtractorMOG2(100,16,false)),
+	m_contours(vector<vector<Point>>())
 {
 }
 
@@ -26,14 +27,14 @@ void Tracking::findBigBlobs(InputOutputArray image, double thresh)
 			contour_area = contourArea(contours[i]) ;
 			if ( contour_area < thresh)
 				small_blobs.push_back(i);
-			drawContours(image, contours, i, cv::Scalar(255,255,255), 
+			cv::drawContours(image, contours, i, cv::Scalar(255,255,255), 
 													 CV_FILLED, 8);
 		}
 	}
 
 	// fill-in all small contours with zeros
 	for (size_t i=0; i < small_blobs.size(); ++i) {
-		drawContours(image, contours, small_blobs[i], cv::Scalar(0), 
+		cv::drawContours(image, contours, small_blobs[i], cv::Scalar(0), 
 													 CV_FILLED, 8);
 	}
 }
@@ -76,26 +77,43 @@ void Tracking::Erosion(InputArray src, OutputArray dst, int size,int kernelType,
 	}
 }
 
+void Tracking::calcObjectContours(Mat& binaryIn)
+{
+	m_contours.clear();
+	vector<Vec4i> hierarchy;
+	findContours(binaryIn,m_contours,hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+}
+
 void Tracking::calcBoundingBoxes( Mat& binaryIn )
 {
 	boundingBoxes.clear();
-	vector<Vec4i> hierarchy;
+	/*vector<Vec4i> hierarchy;
     vector<vector <Point> > contours;
-	findContours(binaryIn,contours,hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
-	for(size_t i = 0; i < contours.size(); ++i)
+	findContours(binaryIn,contours,hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);*/
+	calcObjectContours(binaryIn);
+	for(size_t i = 0; i < m_contours.size(); ++i)
 	{
-		boundingBoxes.push_back(boundingRect(contours[i]));
+		boundingBoxes.push_back(boundingRect(m_contours[i]));
 	}
 }
 
 void Tracking::drawBoundingBoxes( Mat& drawOnImage )
 {
+	//## display parameters
 	const Scalar boundingBoxColor = Scalar(0,255,0);
 	const int boundingBoxThickness = 4;
 	for(std::vector<Rect>::const_iterator it = boundingBoxes.begin(); it != boundingBoxes.end(); ++it)
 	{
 		rectangle(drawOnImage,*it,boundingBoxColor,boundingBoxThickness);
 	}
+}
+
+void Tracking::drawContours( Mat& drawOnImage )
+{
+	//## display parameters
+	const Scalar contourColor = Scalar(0,0,255);
+	const int contourThickness = 2;
+	cv::drawContours(drawOnImage, m_contours, -1, contourColor, contourThickness);
 }
 
 //############	public	#####################
@@ -175,6 +193,7 @@ void Tracking::displayDebugWindows()
 	Mat debugImage = currentFrame.clone();
 	//	##BoundingBoxes
 	drawBoundingBoxes(debugImage);
+	drawContours(debugImage);
 		
 	//	## Corners
 	for( size_t i = 0; i < cornersToTrack.size(); i++ )
@@ -189,10 +208,10 @@ void Tracking::displayDebugWindows()
 	//## show the current frame,the fg masks and background Image
 	namedWindow(windowName_Frame);
 	imshow(windowName_Frame, currentFrame);
-	namedWindow(windowName_MOG2,CV_WINDOW_KEEPRATIO);
-	imshow(windowName_MOG2, foregroundMask);
-	namedWindow(windowName_background,CV_WINDOW_KEEPRATIO);
-	imshow(windowName_background,bgImage);
+	/*namedWindow(windowName_MOG2,CV_WINDOW_KEEPRATIO);
+	imshow(windowName_MOG2, foregroundMask);*/
+	/*namedWindow(windowName_background,CV_WINDOW_KEEPRATIO);
+	imshow(windowName_background,bgImage);*/
 
 	namedWindow(windowName_erode,CV_WINDOW_KEEPRATIO);
 	imshow(windowName_erode,eroded);

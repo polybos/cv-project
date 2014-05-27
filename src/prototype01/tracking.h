@@ -25,11 +25,15 @@ private:
 	const double learning_rate; //learningRate for the backgound-substractor
 	std::vector< Point2f > cornersToTrack;
 
+	std::vector<std::vector <Point> > m_contours;
+
 	std::vector<Rect> boundingBoxes;
 
 	void track_LK(InputArray gray, InputArray mask);
+	void calcObjectContours(Mat& binaryIn);
 	void calcBoundingBoxes(Mat& binaryIn);
 	void drawBoundingBoxes( Mat& drawOnImage );
+	void drawContours( Mat& drawOnImage );
 	void findBigBlobs(InputOutputArray image, double thresh = 90);
 	void Dilation(InputArray src, OutputArray dst, int size,int kernelType, int iterations = 1);
 	void Erosion(InputArray src, OutputArray dst, int size,int kernelType, int iterations = 1);
