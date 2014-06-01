@@ -6,15 +6,36 @@ using namespace cv;
 Tracking::Tracking() : 
 	learning_rate(0.1),
 	mog2BackgoundSubstractor(new BackgroundSubtractorMOG2(100,16,false)),
-    m_contours(vector< vector<Point> >())
+    m_contours(std::vector< std::vector<Point> >()),
+    prevFrame_gray(Mat()),
+    cornersToTrack(std::vector<Point2f>()),
+    trackedCorners(std::vector<Point2f>())
 {
+}
+
+// ##########################
+// ####     private     #####
+// ##########################
+
+
+Tracking::TrackingPoint::TrackingPoint() :
+    color(Scalar(0,0,0))
+{
+
+}
+
+Tracking::TrackingPoint::TrackingPoint(Point2f p_point) :
+    color(Scalar(0,0,0))
+{
+    this->x = p_point.x;
+    this->y = p_point.y;
 }
 
 void Tracking::findBigBlobs(InputOutputArray image, double thresh)
 {
-    vector<vector <Point> > contours;
-	vector<Vec4i> hierarchy;
-	vector<int> small_blobs;
+    std::vector<std::vector <Point> > contours;
+    std::vector<Vec4i> hierarchy;
+    std::vector<int> small_blobs;
 	double contour_area;
 
 	// find all contours in the binary image
@@ -110,23 +131,102 @@ void Tracking::drawBoundingBoxes( Mat& drawOnImage )
 
 void Tracking::drawContours( Mat& drawOnImage )
 {
-	//## display parameters
+    // ## display parameters
 	const Scalar contourColor = Scalar(0,0,255);
 	const int contourThickness = 2;
 	cv::drawContours(drawOnImage, m_contours, -1, contourColor, contourThickness);
 }
 
-//############	public	#####################
+// !!! HIGHLY INEFFICIENT AND DANGEROUS
+void Tracking::discardNotMovingCorners()
+{
+    std::vector<TrackingPoint> filteredTrackedCorners = std::vector<TrackingPoint>();
+    std::vector<TrackingPoint> filteredCornersToTrack = std::vector<TrackingPoint>();
+    bool survivedCorners[30] = { false };
+    // NAIV implementation
+    for( size_t i = 0; i < boundingBoxes.size(); ++i )
+    {
+        auto toTrackIt = cornersToTrack.begin();
+        size_t loopIndex = 0;
+        for( auto trackedIt = trackedCorners.begin(); trackedIt != trackedCorners.end(); ++trackedIt)
+        {
+            if(boundingBoxes[i].contains(*trackedIt))
+            {
+                if(!survivedCorners[loopIndex])
+                {
+                    filteredTrackedCorners.push_back(*trackedIt);
+                    filteredCornersToTrack.push_back(*toTrackIt);
+                    survivedCorners[loopIndex] = true;
+                }
+            }
+            ++toTrackIt;
+            ++loopIndex;
+        }
+    }
+    trackedCorners.assign(filteredTrackedCorners.begin(), filteredTrackedCorners.end());
+    cornersToTrack.assign(filteredCornersToTrack.begin(), filteredCornersToTrack.end());
+}
 
 void Tracking::track_LK( InputArray gray, InputArray mask )
 {
-	const int maxCorners = 15;
-	const float qualityLevel = 0.001;
+    const int maxCorners = 30;
+    const float qualityLevel = 0.001f;
 	const float minDistance = 20;
-	//## find features to track with LK optFlow
-	goodFeaturesToTrack(gray,cornersToTrack, maxCorners, qualityLevel, minDistance,mask,3,false,0.04);
+    Size subPixWinSize(10,10), winSize(31,31);
+    TermCriteria termcrit(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS, 20, 0.03);
+    std::vector<uchar> status;
+    std::vector<float> err;
+
+    // formerly tracked corners should now be tracked again
+    std::swap(trackedCorners,cornersToTrack);
+    // make shure only the currently tracked corners are recognized
+    trackedCorners.clear();
+
+    if(cornersToTrack.size() <= 0.6 * maxCorners)
+    {
+        std::vector<Point2f> newCorners = std::vector<Point2f>();
+        // ## find features to track with LK optFlow
+        goodFeaturesToTrack(gray,newCorners, maxCorners - cornersToTrack.size(),
+                            qualityLevel, minDistance,mask,3,true,0.04);
+        //cornerSubPix(gray, cornersToTrack, subPixWinSize, Size(-1,-1), termcrit);
+        cornersToTrack.insert(cornersToTrack.end(), newCorners.begin(), newCorners.end());
+    }
+    if(prevFrame_gray.empty())
+    {
+        prevFrame_gray = gray.getMat().clone();
+    }
+    if(!cornersToTrack.empty())
+    {
+        cv::calcOpticalFlowPyrLK(prevFrame_gray, gray, cornersToTrack, trackedCorners,
+                                 status, err, winSize, 3, termcrit);
+        auto validTrackedIter = trackedCorners.begin();
+        auto allToTrackIter = cornersToTrack.begin();
+        auto validToTrackIter = cornersToTrack.begin();
+        size_t loopIndex = 0;
+        size_t validCount = 0;
+        for(auto allTrackedIter = trackedCorners.begin();
+            allTrackedIter != trackedCorners.end(); ++allTrackedIter)
+        {
+            if(status[loopIndex])
+            {
+                *validTrackedIter = *allTrackedIter;
+                *validToTrackIter = *allToTrackIter;
+                ++validTrackedIter;
+                ++validToTrackIter;
+                ++validCount;
+            }
+            ++loopIndex;
+            ++allToTrackIter;
+        }
+        trackedCorners.resize(validCount);
+        cornersToTrack.resize(validCount);
+        discardNotMovingCorners();
+    }
 }
 
+// #########################
+// ####     public      ####
+// #########################
 
 std::vector<cv::Rect> Tracking::getBoundariesOfMovement()
 {
@@ -148,7 +248,7 @@ std::vector<cv::Rect> Tracking::getBoundariesOfMovement()
 	opened = Mat(currentFrame.size(), CV_8UC1);
 
 	//########  mask generation and refinement  ###############
-	//update the background model
+    //update the background model and generate mask
 	mog2BackgoundSubstractor->operator()(currentFrame, foregroundMask, learning_rate);
 
 	int erosion_size = 2;
@@ -196,14 +296,21 @@ void Tracking::displayDebugWindows()
 	drawContours(debugImage);
 		
 	//	## Corners
-	for( size_t i = 0; i < cornersToTrack.size(); i++ )
+    auto toTrackIter = cornersToTrack.begin();
+    for( auto trackedIter = trackedCorners.begin();
+         trackedIter != trackedCorners.end(); ++trackedIter)
 	{
-		circle( debugImage, cornersToTrack[i], 10, Scalar( 255. ), -1 );
+        circle( debugImage, *trackedIter, 6, Scalar( 255. ), -1 );
+        if(toTrackIter != cornersToTrack.end())
+        {
+            circle( debugImage, *toTrackIter, 6, Scalar(255,255,0),-1);
+            line (debugImage, *toTrackIter, *trackedIter,Scalar(0,0,255),1);
+            ++toTrackIter;
+        }
 	}
 
 	namedWindow(windowName_debugDrawings, CV_WINDOW_KEEPRATIO);
 	imshow(windowName_debugDrawings, debugImage);
-
 
 	//## show the current frame,the fg masks and background Image
 	namedWindow(windowName_Frame);
