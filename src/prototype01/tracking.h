@@ -43,11 +43,24 @@ private:
     std::vector< Point2f > cornersToTrack;
     std::vector< Point2f > trackedCorners;
 
+    // ###      Farneback Optical flow      ####
+    Mat m_flow_Farneback;
+    std::vector<Vec2f> boundingBoxDirections;
+
+    const int maxCorners;
+    const float qualityLevel;
+    const float minDistance;
+    Size subPixWinSize;
+    Size winSize;
+
+
+
     // ####     detected Objects    ####
 	std::vector<std::vector <Point> > m_contours;
 	std::vector<Rect> boundingBoxes;
 
 	void track_LK(InputArray gray, InputArray mask);
+    void trackFarneback(InputArray gray);
 	void calcObjectContours(Mat& binaryIn);
 	void calcBoundingBoxes(Mat& binaryIn);
 	void drawBoundingBoxes( Mat& drawOnImage );

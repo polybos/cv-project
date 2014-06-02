@@ -9,7 +9,13 @@ Tracking::Tracking() :
     m_contours(std::vector< std::vector<Point> >()),
     prevFrame_gray(Mat()),
     cornersToTrack(std::vector<Point2f>()),
-    trackedCorners(std::vector<Point2f>())
+    trackedCorners(std::vector<Point2f>()),
+    maxCorners(30),
+    qualityLevel(0.1f),
+    minDistance(20),
+    subPixWinSize(Size (10,10)),
+    winSize(Size(20,20)),
+    boundingBoxDirections(std::vector<Vec2f>())
 {
 }
 
@@ -125,7 +131,7 @@ void Tracking::drawBoundingBoxes( Mat& drawOnImage )
 	const int boundingBoxThickness = 4;
 	for(std::vector<Rect>::const_iterator it = boundingBoxes.begin(); it != boundingBoxes.end(); ++it)
 	{
-		rectangle(drawOnImage,*it,boundingBoxColor,boundingBoxThickness);
+        rectangle(drawOnImage,*it,boundingBoxColor,boundingBoxThickness);
 	}
 }
 
@@ -169,10 +175,7 @@ void Tracking::discardNotMovingCorners()
 
 void Tracking::track_LK( InputArray gray, InputArray mask )
 {
-    const int maxCorners = 30;
-    const float qualityLevel = 0.001f;
-	const float minDistance = 20;
-    Size subPixWinSize(10,10), winSize(31,31);
+
     TermCriteria termcrit(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS, 20, 0.03);
     std::vector<uchar> status;
     std::vector<float> err;
@@ -188,7 +191,10 @@ void Tracking::track_LK( InputArray gray, InputArray mask )
         // ## find features to track with LK optFlow
         goodFeaturesToTrack(gray,newCorners, maxCorners - cornersToTrack.size(),
                             qualityLevel, minDistance,mask,3,true,0.04);
-        //cornerSubPix(gray, cornersToTrack, subPixWinSize, Size(-1,-1), termcrit);
+        if(!newCorners.empty())
+        {
+            cornerSubPix(gray, newCorners, subPixWinSize, Size(-1,-1), termcrit);
+        }
         cornersToTrack.insert(cornersToTrack.end(), newCorners.begin(), newCorners.end());
     }
     if(prevFrame_gray.empty())
@@ -221,6 +227,27 @@ void Tracking::track_LK( InputArray gray, InputArray mask )
         trackedCorners.resize(validCount);
         cornersToTrack.resize(validCount);
         discardNotMovingCorners();
+    }
+}
+
+void Tracking::trackFarneback(InputArray gray)
+{
+    if(prevFrame_gray.empty())
+    {
+        prevFrame_gray = gray.getMat().clone();
+    }
+    calcOpticalFlowFarneback(prevFrame_gray, gray, m_flow_Farneback,0.1,2,6,4,7,1.1,0);
+    cv::Mat xy[2]; //X,Y
+    cv::split(m_flow_Farneback, xy);
+
+    boundingBoxDirections.clear();
+    for(auto boundInter = boundingBoxes.begin(); boundInter != boundingBoxes.end(); ++ boundInter)
+    {
+        Mat subMatX = xy[0](*boundInter);
+        Mat subMatY = xy[1](*boundInter);
+        Scalar meanX = mean(subMatX);
+        Scalar meanY = mean(subMatY);
+        boundingBoxDirections.push_back(Vec2f(meanX.val[0],meanY.val[0]));
     }
 }
 
@@ -271,8 +298,8 @@ std::vector<cv::Rect> Tracking::getBoundariesOfMovement()
 	calcBoundingBoxes(opened);
 
 	//########### Tracking ################
-	track_LK(gray,opened);
-
+    //track_LK(gray,opened);
+    trackFarneback(gray);
 	return boundingBoxes;
 }
 
@@ -292,46 +319,77 @@ void Tracking::displayDebugWindows()
 	//## ## debugDrawings
 	Mat debugImage = currentFrame.clone();
 	//	##BoundingBoxes
-	drawBoundingBoxes(debugImage);
+    drawBoundingBoxes(debugImage);
 	drawContours(debugImage);
 		
-	//	## Corners
-    auto toTrackIter = cornersToTrack.begin();
-    for( auto trackedIter = trackedCorners.begin();
-         trackedIter != trackedCorners.end(); ++trackedIter)
-	{
-        circle( debugImage, *trackedIter, 6, Scalar( 255. ), -1 );
-        if(toTrackIter != cornersToTrack.end())
-        {
-            circle( debugImage, *toTrackIter, 6, Scalar(255,255,0),-1);
-            line (debugImage, *toTrackIter, *trackedIter,Scalar(0,0,255),1);
-            ++toTrackIter;
-        }
-	}
+    // #########################
+    // ####     LK Flow     ####
+    // #########################
 
-	namedWindow(windowName_debugDrawings, CV_WINDOW_KEEPRATIO);
-	imshow(windowName_debugDrawings, debugImage);
+//	//	## Corners
+//    std::vector<Vec2f> directions = std::vector<Vec2f>();
+//    auto toTrackIter = cornersToTrack.begin();
+//    for( auto trackedIter = trackedCorners.begin();
+//         trackedIter != trackedCorners.end(); ++trackedIter)
+//	{
+//        circle( debugImage, *trackedIter, 6, Scalar( 255. ), -1 );
+//        if(toTrackIter != cornersToTrack.end())
+//        {
+//            circle( debugImage, *toTrackIter, 6, Scalar(255,255,0),-1);
+//            line (debugImage, *toTrackIter, *trackedIter,Scalar(0,0,255),1);
 
-	//## show the current frame,the fg masks and background Image
+////            Point a = *trackedIter;
+////            Point b = *toTrackIter;
+//            directions.push_back(Vec2f(*trackedIter - *toTrackIter));
+
+//             ++toTrackIter;
+//        }
+//	}
+
+//    Vec2f accu = Vec2f(0,0);
+//    for(auto dirIter = directions.begin(); dirIter != directions.end(); ++dirIter)
+//    {
+//        accu += *dirIter;
+//    }
+//    //normalize(accu);
+
+//    Point debugMenDirPos = Point(20,20);
+//    line(debugImage, debugMenDirPos, debugMenDirPos + Point(accu), Scalar(255,0,255),2);
+
+     std::cout << "tracked Corners: " << trackedCorners.size() << std::endl;
+
+
+    // #################################
+    // ####     Farneback Flow      ####
+    // #################################
+    Point offset = Point(20,0);
+    auto boundingDirIter = boundingBoxDirections.begin();
+    for(std::vector<Rect>::const_iterator it = boundingBoxes.begin(); it != boundingBoxes.end(); ++it)
+    {
+        Rect tmp = *it;
+        line(debugImage,tmp.br() + offset, tmp.br() + offset + Point(*boundingDirIter), Scalar(255,0,255),3 );
+        circle(debugImage, tmp.br() + offset, 5,Scalar(255,0,0),-1);
+        ++boundingDirIter;
+    }
+
+
+
+    namedWindow(windowName_debugDrawings, CV_WINDOW_KEEPRATIO);
+    imshow(windowName_debugDrawings, debugImage);
+
+
+
+    // ##################################
+    // ####     currFrame, eroded    ####
+    // ##################################
 	namedWindow(windowName_Frame);
 	imshow(windowName_Frame, currentFrame);
-	/*namedWindow(windowName_MOG2,CV_WINDOW_KEEPRATIO);
-	imshow(windowName_MOG2, foregroundMask);*/
-	/*namedWindow(windowName_background,CV_WINDOW_KEEPRATIO);
-	imshow(windowName_background,bgImage);*/
 
 	namedWindow(windowName_erode,CV_WINDOW_KEEPRATIO);
 	imshow(windowName_erode,eroded);
 
 
-	//## ## Debugwindows for morphilogic operations	
-	/*const char* windowName_erode = "erded";
-	namedWindow(windowName_erode,CV_WINDOW_KEEPRATIO);
-	const char* windowName_opened = "opened";
-	namedWindow(windowName_opened, CV_WINDOW_KEEPRATIO);
-	imshow(windowName_opened,opened);
-	imshow(windowName_erode,eroded);
-	drawBoundingBoxes(opened);*/
+
 }
 
 void Tracking::setFileLoader( FileLoader* fileLoader )
