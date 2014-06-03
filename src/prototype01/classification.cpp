@@ -53,12 +53,41 @@ void Classification::setBoundariesOfMovement( std::vector<cv::Rect> &boundaries 
 TrafficClass Classification::getTrafficClassOfBoundary( cv::Rect boundary )
 {
     cv::Mat m_currentImage = m_fileLoader->getCurrentImage();
-    cv::Mat roiMat = m_currentImage( boundary );
+
+    // calculate position and size for bigger border
+    int padding = 20;
+    int x = ( boundary.x < padding ) ? 0 : boundary.x - padding;
+    int y = ( boundary.y < padding ) ? 0 : boundary.y - padding;
+    int width = 0;
+    int distanceXandWidth = m_currentImage.size().width - x;
+    if( distanceXandWidth > boundary.width + 2*padding )
+    {
+        width = boundary.width + 2*padding;
+    }
+    else
+    {
+        width = distanceXandWidth;
+    }
+    int height = 0;
+    int distanceYandHeight = m_currentImage.size().height - y;
+    if( distanceYandHeight > boundary.height + 2*padding )
+    {
+        height = boundary.height + 2*padding;
+    }
+    else
+    {
+        height = distanceYandHeight;
+    }
+    cv::Rect biggerBoundary = cv::Rect( x, y, width, height );
+
+    // create region-of-interest and do some preprocessing
+    cv::Mat roiMat = m_currentImage( biggerBoundary );
     cv::Mat gray;
     cv::cvtColor( roiMat, gray, cv::COLOR_BGR2GRAY );
     cv::equalizeHist( gray, gray );
 
-
+    // start detection of objects
+    // todo! find a way to detect multiple objects in one setting (actually returns only first detected object-class)
     std::vector< cv::Rect> detected_bicycles;
     m_cc_human.detectMultiScale( gray, detected_bicycles, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, cv::Size(30, 30) );
     if( detected_bicycles.size() >= 1 )
