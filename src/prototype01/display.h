@@ -14,7 +14,7 @@ public:
     void setFileLoader( FileLoader *fileLoader );
     void setTrackingObject( Tracking *tracking );
     void setClassificationObject( Classification *classification );
-    void setClassificationResults( std::vector< std::pair<cv::Rect, TrafficClass> > results );
+    void setClassificationResults( std::vector< std::pair<cv::Rect, TrafficClass> >& results );
     void displayResult();
     void displayTrackingOutput();
 //    void displayClassificationOutput();

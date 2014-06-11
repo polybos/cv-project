@@ -89,31 +89,31 @@ TrafficClass Classification::getTrafficClassOfBoundary( cv::Rect boundary )
     // start detection of objects
     // todo! find a way to detect multiple objects in one setting (actually returns only first detected object-class)
     std::vector< cv::Rect> detected_bicycles;
-    m_cc_human.detectMultiScale( gray, detected_bicycles, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, cv::Size(30, 30) );
+    m_cc_human.detectMultiScale( gray, detected_bicycles, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, cv::Size(40, 40) );
     if( detected_bicycles.size() >= 1 )
     {
-        std::cout << "Bicycle!!!!" << std::endl;
+        std::cout << "Bicycle" << std::endl;
         return bicycle;
     }
 
     std::vector< cv::Rect > detected_human;
-    m_cc_human.detectMultiScale( gray, detected_human, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, cv::Size(30, 30) );
+    m_cc_human.detectMultiScale( gray, detected_human, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, cv::Size(40, 40) );
     if( detected_human.size() >= 1 )
     {
-        std::cout << "Human!!!!" << std::endl;
+        std::cout << "Human" << std::endl;
         return human;
     }
 
     std::vector< cv::Rect > detected_cars;
-    m_cc_car.detectMultiScale( gray, detected_cars, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, cv::Size(30, 30) );
+    m_cc_car.detectMultiScale( gray, detected_cars, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, cv::Size(40, 40) );
     if( detected_cars.size() >= 1 )
     {
-        std::cout << "Car!!!!" << std::endl;
+        std::cout << "Car" << std::endl;
         return car;
     }
 
 
-    std::cout << "Undefined!!!!" << std::endl;
+    std::cout << "Undefined" << std::endl;
     return undefined;
 }
 
@@ -137,4 +137,5 @@ void Classification::runClassifier()
     {
         m_results.push_back( std::pair<cv::Rect, TrafficClass>( *it, getTrafficClassOfBoundary( *it ) ) );
     }
+    std::cout << " --- " << std::endl;
 }

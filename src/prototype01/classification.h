@@ -12,10 +12,11 @@
 
 enum TrafficClass
 {
-    car,
+    car = 0,
     human,
     bicycle,
-    undefined
+    undefined,
+    eTrafficClassSize
 };
 
 class Classification

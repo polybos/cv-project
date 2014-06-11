@@ -152,9 +152,9 @@ void Tracking::discardNotMovingCorners()
     // NAIV implementation
     for( size_t i = 0; i < boundingBoxes.size(); ++i )
     {
-        auto toTrackIt = cornersToTrack.begin();
+        std::vector< Point2f >::iterator toTrackIt = cornersToTrack.begin();
         size_t loopIndex = 0;
-        for( auto trackedIt = trackedCorners.begin(); trackedIt != trackedCorners.end(); ++trackedIt)
+        for( std::vector< Point2f >::iterator trackedIt = trackedCorners.begin(); trackedIt != trackedCorners.end(); ++trackedIt)
         {
             if(boundingBoxes[i].contains(*trackedIt))
             {
@@ -205,12 +205,12 @@ void Tracking::track_LK( InputArray gray, InputArray mask )
     {
         cv::calcOpticalFlowPyrLK(prevFrame_gray, gray, cornersToTrack, trackedCorners,
                                  status, err, winSize, 3, termcrit);
-        auto validTrackedIter = trackedCorners.begin();
-        auto allToTrackIter = cornersToTrack.begin();
-        auto validToTrackIter = cornersToTrack.begin();
+        std::vector< Point2f >::iterator validTrackedIter = trackedCorners.begin();
+        std::vector< Point2f >::iterator allToTrackIter = cornersToTrack.begin();
+        std::vector< Point2f >::iterator validToTrackIter = cornersToTrack.begin();
         size_t loopIndex = 0;
         size_t validCount = 0;
-        for(auto allTrackedIter = trackedCorners.begin();
+        for(std::vector< Point2f >::iterator allTrackedIter = trackedCorners.begin();
             allTrackedIter != trackedCorners.end(); ++allTrackedIter)
         {
             if(status[loopIndex])
@@ -241,7 +241,7 @@ void Tracking::trackFarneback(InputArray gray)
     cv::split(m_flow_Farneback, xy);
 
     boundingBoxDirections.clear();
-    for(auto boundInter = boundingBoxes.begin(); boundInter != boundingBoxes.end(); ++ boundInter)
+    for(std::vector<Rect>::iterator boundInter = boundingBoxes.begin(); boundInter != boundingBoxes.end(); ++ boundInter)
     {
         Mat subMatX = xy[0](*boundInter);
         Mat subMatY = xy[1](*boundInter);
@@ -363,7 +363,7 @@ void Tracking::displayDebugWindows()
     // ####     Farneback Flow      ####
     // #################################
     Point offset = Point(20,0);
-    auto boundingDirIter = boundingBoxDirections.begin();
+    std::vector<Vec2f>::iterator boundingDirIter = boundingBoxDirections.begin();
     for(std::vector<Rect>::const_iterator it = boundingBoxes.begin(); it != boundingBoxes.end(); ++it)
     {
         Rect tmp = *it;

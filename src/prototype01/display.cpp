@@ -28,7 +28,7 @@ void Display::setClassificationObject( Classification *classification )
     m_classification = classification;
 }
 
-void Display::setClassificationResults(std::vector<std::pair<Rect, TrafficClass> > results)
+void Display::setClassificationResults(std::vector<std::pair<Rect, TrafficClass> >& results)
 {
     m_results = results;
 }
