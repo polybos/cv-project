@@ -5,6 +5,9 @@
 #include "classification.h"
 #include "display.h"
 #include "statistics.h"
+#include "parameterEvaluator.h"
+
+//#define PARAMETERTEST
 
 void waitForKeyboard(int &keyboard, bool &stepMode);
 
@@ -34,7 +37,18 @@ int main( int argc, char** argv )
 //    m_display->setTrackingObject( m_tracking );
 //    m_display->setClassifcationObject( m_classification );
 
+#ifdef PARAMETERTEST
+    ParameterEvaluator *m_parameterEvaluator = new ParameterEvaluator();
 
+    m_parameterEvaluator->setFileLoaderObject( m_fileLoader );
+    m_parameterEvaluator->setTrackingObject( m_tracking );
+    m_parameterEvaluator->setClassificationObject( m_classification );
+    m_parameterEvaluator->setDisplayObject( m_display );
+    m_parameterEvaluator->setStatisticsObject( m_statistics );
+    m_parameterEvaluator->run();
+    m_parameterEvaluator->outputStatistics();
+
+#else // PARAMETERTEST
 	int keyboard = 0;
     std::vector< std::pair<cv::Rect, TrafficClass> > classificationResults;
 
@@ -75,7 +89,12 @@ int main( int argc, char** argv )
     // Print collected statistics ...
     m_statistics->summaryOutput();
 
+#endif //PARAMETERTEST
+
     // Some cleanup
+#ifdef PARAMETERTEST
+    delete m_parameterEvaluator;
+#endif // PARAMETERTEST
     delete m_statistics;
     delete m_display;
     delete m_classification;

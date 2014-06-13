@@ -7,6 +7,7 @@
 #include <opencv2/highgui/highgui.hpp>  // OpenCV window I/O
 #include <opencv2/features2d/features2d.hpp>
 
+//#define DEBUG
 
 Classification::Classification()
     :m_fileLoader()
@@ -19,6 +20,9 @@ Classification::Classification()
     ,m_cc_human( cv::CascadeClassifier( ) )
     ,m_cc_bicycle( cv::CascadeClassifier( ) )
     ,m_currentImage()
+    ,m_scaleFactor( 1.1 )
+    ,m_minNeighbours( 2 )
+    ,m_minSize( 40 )
 
 {
     std::cout << "m_cascadePathCar:" << m_cascadePathCar << std::endl;
@@ -89,31 +93,38 @@ TrafficClass Classification::getTrafficClassOfBoundary( cv::Rect boundary )
     // start detection of objects
     // todo! find a way to detect multiple objects in one setting (actually returns only first detected object-class)
     std::vector< cv::Rect> detected_bicycles;
-    m_cc_human.detectMultiScale( gray, detected_bicycles, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, cv::Size(40, 40) );
+    m_cc_human.detectMultiScale( gray, detected_bicycles, m_scaleFactor, m_minNeighbours, 0|CV_HAAR_SCALE_IMAGE, cv::Size( m_minSize, m_minSize ) );
     if( detected_bicycles.size() >= 1 )
     {
+#ifdef DEBUG
         std::cout << "Bicycle" << std::endl;
+#endif // DEBUG
         return bicycle;
     }
 
     std::vector< cv::Rect > detected_human;
-    m_cc_human.detectMultiScale( gray, detected_human, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, cv::Size(40, 40) );
+    m_cc_human.detectMultiScale( gray, detected_human, m_scaleFactor, m_minNeighbours, 0|CV_HAAR_SCALE_IMAGE, cv::Size( m_minSize, m_minSize ) );
     if( detected_human.size() >= 1 )
     {
+#ifdef DEBUG
         std::cout << "Human" << std::endl;
+#endif // DEBUG
         return human;
     }
 
     std::vector< cv::Rect > detected_cars;
-    m_cc_car.detectMultiScale( gray, detected_cars, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, cv::Size(40, 40) );
+    m_cc_car.detectMultiScale( gray, detected_cars, m_scaleFactor, m_minNeighbours, 0|CV_HAAR_SCALE_IMAGE, cv::Size( m_minSize, m_minSize ) );
     if( detected_cars.size() >= 1 )
     {
+#ifdef DEBUG
         std::cout << "Car" << std::endl;
+#endif // DEBUG
         return car;
     }
 
-
+#ifdef DEBUG
     std::cout << "Undefined" << std::endl;
+#endif // DEBUG
     return undefined;
 }
 
@@ -137,5 +148,22 @@ void Classification::runClassifier()
     {
         m_results.push_back( std::pair<cv::Rect, TrafficClass>( *it, getTrafficClassOfBoundary( *it ) ) );
     }
+#ifdef DEBUG
     std::cout << " --- " << std::endl;
+#endif // DEBUG
+}
+
+void Classification::setScaleFactor( double scaleFactor )
+{
+    m_scaleFactor = scaleFactor;
+}
+
+void Classification::setMinNeighbours( unsigned int minNeighbours )
+{
+    m_minNeighbours = minNeighbours;
+}
+
+void Classification::setMinSize( unsigned int minSize )
+{
+    m_minSize = minSize;
 }

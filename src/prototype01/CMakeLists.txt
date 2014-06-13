@@ -8,6 +8,8 @@ display.cpp
 display.h
 fileLoader.cpp
 fileLoader.h
+parameterEvaluator.cpp
+parameterEvaluator.h
 statistics.cpp
 statistics.h
 tracking.cpp

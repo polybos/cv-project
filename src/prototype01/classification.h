@@ -33,7 +33,11 @@ public:
 
     // Main function, which tries to run classifiers
     void runClassifier();
-//    void setParameter( string );
+
+    // set parameter
+    void setScaleFactor( double scaleFactor );
+    void setMinNeighbours( unsigned int minNeighbours );
+    void setMinSize( unsigned int minSize );
 
 private:
     FileLoader *m_fileLoader;
@@ -46,6 +50,11 @@ private:
     cv::CascadeClassifier m_cc_human;
     cv::CascadeClassifier m_cc_bicycle;
     cv::Mat m_currentImage;
+
+    // parameter of detectMultiScale
+    double m_scaleFactor;
+    unsigned int m_minNeighbours;
+    unsigned int m_minSize;
 };
 
 #endif // CLASSIFICATION_H

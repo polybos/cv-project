@@ -12,6 +12,11 @@ Statistics::Statistics()
     }
 }
 
+void Statistics::setCompleteFrameCount(const unsigned int completeFrameCount)
+{
+    m_completeFrameCount = completeFrameCount;
+}
+
 void Statistics::incrementFrameCount( const unsigned int frameCount )
 {
     m_frameCount += frameCount;
@@ -27,6 +32,28 @@ void Statistics::incrementDetectedObjectsCount( TrafficClass trafficClass )
     assert( trafficClass < static_cast<int>( eTrafficClassSize ) && "Tried to increase a non-valid TrafficClass" );
 
     m_detectedObjectsCount[trafficClass]++;
+}
+
+const unsigned int Statistics::getCompleteFrameCount()
+{
+    return m_completeFrameCount;
+}
+
+const unsigned int Statistics::getFrameCount()
+{
+    return m_frameCount;
+}
+
+const unsigned int Statistics::getBoundaryCount()
+{
+    return m_boundaryCount;
+}
+
+const unsigned int Statistics::getDetectedObjectsCount(TrafficClass trafficClass )
+{
+    assert( trafficClass < static_cast<int>( eTrafficClassSize ) && "Tried to return a non-valid TrafficClass" );
+
+    return m_detectedObjectsCount[trafficClass];
 }
 
 void Statistics::summaryOutput()
