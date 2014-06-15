@@ -95,12 +95,12 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
         bool newBoundaryInside = false;
         for( it3 = boundariesChecked.begin(); it3 != boundariesChecked.end(); ++it3 )
         {
-            if( it3->second == true )
+            if( it3->second >= 0 )
             {
                 continue;
             }
 
-            // check if an new boundary is inside bigger old/calculated/cumulated boundary
+            // check if a new boundary is inside bigger old/calculated/cumulated boundary
             cv::Rect nB = it3->first; //< newBoundary
             unsigned int bBx2 = bB.x + bB.width;
             unsigned int bBy2 = bB.y + bB.height;
@@ -108,7 +108,7 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
             unsigned int nBy2 = nB.y + nB.height;
             if( nB.x >= bB.x && nB.y >= bB.y && nBx2 <= bBx2 && nBy2 <= bBy2 )
             {
-                it3->second = true;
+                it3->second = it1->first; //< register new boundary to cumulated boundary
                 newBoundaryInside = true;
             }
         }
@@ -118,8 +118,37 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
         {
             m_calculatedBoundaries.erase( it1 );
         }
+        else //< set new area of boundary
+        {
+            unsigned int x1 = currentImage.size().width;
+            unsigned int x2 = 0;
+            unsigned int y1 = currentImage.size().height;
+            unsigned int y2 = 0;
+
+            for( it3 = boundariesChecked.begin(); it3 != boundariesChecked.end(); ++it3 )
+            {
+                if( it3->second == it1->first )
+                {
+                    unsigned int newX1 = it3->first.x;
+                    unsigned int newX2 = it3->first.x + it3->first.width;
+                    unsigned int newY1 = it3->first.y;
+                    unsigned int newY2 = it3->first.y + it3->first.height;
+                    x1 = ( newX1 < x1 ) ? newX1 : x1;
+                    x2 = ( newX2 > x2 ) ? newX2 : x2;
+                    y1 = ( newY1 < y1 ) ? newY1 : y1;
+                    y2 = ( newY2 > y2 ) ? newY2 : y2;
+                }
+            }
+            unsigned int width = x2 - x1;
+            unsigned int height = y2 - y1;
+            width = ( width > 0 ) ? width : 0;
+            height = ( height > 0 ) ? height : 0;
+            cv::Rect newBound = cv::Rect( x1, y1, width, height );
+
+            m_calculatedBoundaries.at( it1->first ) = newBound;
+        }
     }
-    // todo! insert all non-checked to m_calculatedBoundaries
+    // insert all non-checked to m_calculatedBoundaries
     for( it3 = boundariesChecked.begin(); it3 != boundariesChecked.end(); ++it3 )
     {
         if( it3->second == false )
