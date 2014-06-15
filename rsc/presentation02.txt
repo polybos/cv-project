@@ -1,0 +1,50 @@
+Projekt Grundlagen der Computer Vision
+======================================
+*Manuel Kosta, Franz Kuntke*
+
+
+
+
+Vorstellung des alten Projektstandes
+====================================
+
+* ursprüngliche Idee:
+  * Background Substraction zur Hintergrundgenerierung
+  * Objektverfolgung mittels "optischen Fluss" -> Tracking soll Detektionsfehler minimieren
+  * Klassifikation anhand von Form (Seitenverhältnis und markante Kanten)
+  
+* Projektstand vom 20.05.
+  * Background Substraction implementiert, bereits finalen Stand erreicht
+  * Klassifikation
+    * auf Haar-Feature-Detektor umgestellt
+    * erster Test (nur unter Linux lauffähig) konnte in erstem Datensatz Autos "gut" erkennen
+
+
+Vorstellung der Verbesserungen
+==============================
+
+Segmentierung
+-------------
+
+* keine Verbesserungen ohne (aufwändige) Neuimplementierung möglich
+* Einzeichnen der Konturen zu Debugzwecken
+
+Klassifikation
+--------------
+
+* Code komplett umgestellt -> auch auf Windows lauffähig
+* neue Trainingsdaten erstellt
+* "Evaluation" von unterschiedlichen Parametern
+* Ergebnis -> ?
+
+Tracking
+--------
+
+* Versuche:
+  * mittels optischem Fluss Schätzung der Bewegungsrichtung -> ohne Erfolg
+* ?
+
+Probleme und Fehler
+===================
+
+* aktuelle Probleme -> mögliche Lösungen
