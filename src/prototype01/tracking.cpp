@@ -297,9 +297,6 @@ std::vector<cv::Rect> Tracking::getBoundariesOfMovement()
 
 	calcBoundingBoxes(opened);
 
-	//########### Tracking ################
-    //track_LK(gray,opened);
-    trackFarneback(gray);
 	return boundingBoxes;
 }
 
@@ -321,74 +318,12 @@ void Tracking::displayDebugWindows()
 	//	##BoundingBoxes
     drawBoundingBoxes(debugImage);
 	drawContours(debugImage);
-		
-    // #########################
-    // ####     LK Flow     ####
-    // #########################
-
-//	//	## Corners
-//    std::vector<Vec2f> directions = std::vector<Vec2f>();
-//    auto toTrackIter = cornersToTrack.begin();
-//    for( auto trackedIter = trackedCorners.begin();
-//         trackedIter != trackedCorners.end(); ++trackedIter)
-//	{
-//        circle( debugImage, *trackedIter, 6, Scalar( 255. ), -1 );
-//        if(toTrackIter != cornersToTrack.end())
-//        {
-//            circle( debugImage, *toTrackIter, 6, Scalar(255,255,0),-1);
-//            line (debugImage, *toTrackIter, *trackedIter,Scalar(0,0,255),1);
-
-////            Point a = *trackedIter;
-////            Point b = *toTrackIter;
-//            directions.push_back(Vec2f(*trackedIter - *toTrackIter));
-
-//             ++toTrackIter;
-//        }
-//	}
-
-//    Vec2f accu = Vec2f(0,0);
-//    for(auto dirIter = directions.begin(); dirIter != directions.end(); ++dirIter)
-//    {
-//        accu += *dirIter;
-//    }
-//    //normalize(accu);
-
-//    Point debugMenDirPos = Point(20,20);
-//    line(debugImage, debugMenDirPos, debugMenDirPos + Point(accu), Scalar(255,0,255),2);
-
-     std::cout << "tracked Corners: " << trackedCorners.size() << std::endl;
-
-
-    // #################################
-    // ####     Farneback Flow      ####
-    // #################################
-    Point offset = Point(20,0);
-    std::vector<Vec2f>::iterator boundingDirIter = boundingBoxDirections.begin();
-    for(std::vector<Rect>::const_iterator it = boundingBoxes.begin(); it != boundingBoxes.end(); ++it)
-    {
-        Rect tmp = *it;
-        line(debugImage,tmp.br() + offset, tmp.br() + offset + Point(*boundingDirIter), Scalar(255,0,255),3 );
-        circle(debugImage, tmp.br() + offset, 5,Scalar(255,0,0),-1);
-        ++boundingDirIter;
-    }
-
-
 
     namedWindow(windowName_debugDrawings, CV_WINDOW_KEEPRATIO);
     imshow(windowName_debugDrawings, debugImage);
 
-
-
-    // ##################################
-    // ####     currFrame, eroded    ####
-    // ##################################
-	namedWindow(windowName_Frame);
-	imshow(windowName_Frame, currentFrame);
-
 	namedWindow(windowName_erode,CV_WINDOW_KEEPRATIO);
 	imshow(windowName_erode,eroded);
-
-
 
 }
 
