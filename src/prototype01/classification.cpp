@@ -93,7 +93,7 @@ TrafficClass Classification::getTrafficClassOfBoundary( cv::Rect boundary )
     // start detection of objects
     // todo! find a way to detect multiple objects in one setting (actually returns only first detected object-class)
     std::vector< cv::Rect> detected_bicycles;
-    m_cc_human.detectMultiScale( gray, detected_bicycles, m_scaleFactor, m_minNeighbours, 0|CV_HAAR_SCALE_IMAGE, cv::Size( m_minSize, m_minSize ) );
+    m_cc_bicycle.detectMultiScale( gray, detected_bicycles, m_scaleFactor, m_minNeighbours, 0|CV_HAAR_SCALE_IMAGE, cv::Size( m_minSize, m_minSize ) );
     if( detected_bicycles.size() >= 1 )
     {
 #ifdef DEBUG

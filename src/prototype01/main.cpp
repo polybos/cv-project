@@ -1,13 +1,14 @@
 #include <string>
 
-#include "fileLoader.h"
-#include "tracking.h"
 #include "classification.h"
 #include "display.h"
-#include "statistics.h"
+#include "fileLoader.h"
 #include "parameterEvaluator.h"
+#include "statistics.h"
+#include "tracking.h"
+#include "trackingreforming.h"
 
-//#define PARAMETERTEST
+// #define PARAMETERTEST
 
 void waitForKeyboard(int &keyboard, bool &stepMode);
 
@@ -19,6 +20,7 @@ int main( int argc, char** argv )
     // Initialize objects with main functionality
     FileLoader *m_fileLoader = new FileLoader();
     Tracking *m_tracking = new Tracking();
+    TrackingReforming *m_trackingReforming = new TrackingReforming();
     Classification *m_classification = new Classification();
     Display *m_display = new Display();
     Statistics *m_statistics = new Statistics();
@@ -32,6 +34,7 @@ int main( int argc, char** argv )
 
     // Step2: Let objects know each other ...
     m_tracking->setFileLoader( m_fileLoader );
+    m_trackingReforming->setFileLoader( m_fileLoader );
     m_classification->setFileLoader( m_fileLoader );
     m_display->setFileLoader( m_fileLoader );
 //    m_display->setTrackingObject( m_tracking );
@@ -54,14 +57,19 @@ int main( int argc, char** argv )
 
     while( m_fileLoader->getSequencePosition() != m_fileLoader->getSequenceSize()-1 && (char)keyboard != 27 )
     {
-        // Step3: Calculate tracking of moved objects
+        // Step3.1: Calculate tracking of moved objects
 		boundaries = m_tracking->getBoundariesOfMovement();
         //debug output
 //        m_tracking->displayDebugWindows();
 
+        // Step3.2: Improve boundaries
+        m_trackingReforming->registerCurrentBoundaries( boundaries );
+        boundaries.clear();
+        boundaries = m_trackingReforming->getNewBoundaries();
+
         // Step4: Calculate classification of tracked objects
         m_classification->setBoundariesOfMovement( boundaries );
-        m_classification->runClassifier();        
+        m_classification->runClassifier();
         classificationResults = m_classification->getTrafficClasses();
 
         // Step5: Display results
@@ -88,7 +96,6 @@ int main( int argc, char** argv )
 
     // Print collected statistics ...
     m_statistics->summaryOutput();
-
 #endif //PARAMETERTEST
 
     // Some cleanup
@@ -98,6 +105,7 @@ int main( int argc, char** argv )
     delete m_statistics;
     delete m_display;
     delete m_classification;
+    delete m_trackingReforming;
     delete m_tracking;
     delete m_fileLoader;
 
@@ -110,7 +118,7 @@ void waitForKeyboard(int &keyboard, bool &stepMode)
 {
     if( !stepMode )
     {
-        keyboard = cv::waitKey(5);
+        keyboard = cv::waitKey(40);
         if ( keyboard == 32 )
         {
             stepMode = true;

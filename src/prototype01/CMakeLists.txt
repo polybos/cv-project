@@ -13,7 +13,9 @@ parameterEvaluator.h
 statistics.cpp
 statistics.h
 tracking.cpp
-tracking.h )
+tracking.h
+trackingreforming.cpp
+trackingreforming.h )
 
 target_link_libraries( prototype01 ${OpenCV_LIBS} )
 

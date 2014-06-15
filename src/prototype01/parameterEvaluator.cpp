@@ -165,16 +165,16 @@ void ParameterEvaluator::setDefaultTestParameter()
     ClassificationTriplet triplet;
 
     /* we want to test following in all combinations:
-     *      * scaleFactor 0.9 - 1.4
+     *      * scaleFactor 1.1 - 1.4
      *      * minNeighbours 1 - 5
      *      * minSize 10 - 50 (step size of 5)
      */
 
-    for( scaleFactor = 0.9; scaleFactor <= 1.4; scaleFactor += 0.1 )
+    for( scaleFactor = 1.1; scaleFactor <= 1.4; scaleFactor += 0.1 )
     {
         for( minNeighbours = 1; minNeighbours <= 5; minNeighbours += 1 )
         {
-            for( minSize = 10; minSize <= 50; minSize += 5 )
+            for( minSize = 15; minSize <= 45; minSize += 5 )
             {
                 triplet.scaleFactor     = scaleFactor;
                 triplet.minNeighbours   = minNeighbours;
