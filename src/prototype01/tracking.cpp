@@ -325,6 +325,9 @@ void Tracking::displayDebugWindows()
 	namedWindow(windowName_erode,CV_WINDOW_KEEPRATIO);
 	imshow(windowName_erode,eroded);
 
+	namedWindow(windowName_background,CV_WINDOW_KEEPRATIO);
+	imshow(windowName_background,bgImage);
+
 }
 
 void Tracking::setFileLoader( FileLoader* fileLoader )

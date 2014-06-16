@@ -37,7 +37,7 @@ int main( int argc, char** argv )
     m_trackingReforming->setFileLoader( m_fileLoader );
     m_classification->setFileLoader( m_fileLoader );
     m_display->setFileLoader( m_fileLoader );
-//    m_display->setTrackingObject( m_tracking );
+    m_display->setTrackingObject( m_tracking );
 //    m_display->setClassifcationObject( m_classification );
 
 #ifdef PARAMETERTEST
@@ -75,7 +75,7 @@ int main( int argc, char** argv )
         // Step5: Display results
         m_display->setClassificationResults( classificationResults );
         m_display->displayResult();
-//        m_display->displayTrackingOutput();
+        m_display->displayTrackingOutput();
 
         // Step6: Log some things for statistics (for better comparision when testing parameters ...)
         m_statistics->incrementFrameCount();
