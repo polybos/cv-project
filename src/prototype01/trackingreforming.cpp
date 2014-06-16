@@ -1,6 +1,7 @@
 #include "trackingreforming.h"
 
 #include <vector>
+#include <set>
 
 TrackingReforming::TrackingReforming()
     :m_fileLoader()
@@ -64,8 +65,8 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
         cv::Rect oldBound = it1->second;
 
         // calculate position and size for bigger border
-        int paddingX = currentImage.size().width  * 0.35;
-        int paddingY = currentImage.size().height * 0.15;
+        int paddingX = oldBound.width  * 0.55;
+        int paddingY = oldBound.height * 0.25;
         int x = ( oldBound.x < paddingX ) ? 0 : oldBound.x - paddingX;
         int y = ( oldBound.y < paddingY ) ? 0 : oldBound.y - paddingY;
         int width = 0;
@@ -162,6 +163,38 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
                 m_calculatedBoundaries.insert( std::make_pair( id,it3->first ) );
             }
         }
+    }
+
+    // look for boundary inside another boundary
+    std::map<int, cv::Rect>::iterator it1_2;
+    std::set<int> deleteKeys;
+    for( it1 = m_calculatedBoundaries.begin(); it1 != m_calculatedBoundaries.end() && it1 != --m_calculatedBoundaries.end() ; ++it1 )
+    {
+        cv::Rect bound1 = it1->second;
+        it1_2 = it1;
+        for( ++it1_2; it1_2 != m_calculatedBoundaries.end(); ++it1_2 )
+        {
+            cv::Rect bound2 = it1_2->second;
+
+            if( bound1.contains( bound2.tl() ) && bound1.contains( bound2.br() ) )
+            {
+                deleteKeys.insert( it1_2->first );
+            }
+            else
+            {
+                if( bound2.contains( bound1.tl() ) && bound2.contains( bound1.br() ) )
+                {
+                    deleteKeys.insert( it1->first );
+                }
+            }
+        }
+    }
+
+    std::set<int>::iterator delIt;
+    for( delIt = deleteKeys.begin(); delIt != deleteKeys.end(); ++delIt )
+    {
+        int index = *delIt;
+        m_calculatedBoundaries.erase( index );
     }
 
 }
