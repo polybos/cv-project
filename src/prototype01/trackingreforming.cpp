@@ -112,6 +112,47 @@ void TrackingReforming::getNewClasses(std::vector< std::pair<cv::Rect, TrafficCl
 // ---------------
 // --- private ---
 
+
+cv::Rect TrackingReforming::enlargeRect(cv::Rect oldBound, int paddingX, int paddingY)
+{
+	cv::Mat currentImage = m_fileLoader->getCurrentImage();
+    
+    int x = ( oldBound.x < paddingX ) ? 0 : oldBound.x - paddingX;
+    int y = ( oldBound.y < paddingY ) ? 0 : oldBound.y - paddingY;
+    int width = 0;
+    int distanceXandWidth = currentImage.size().width - x;
+    if( distanceXandWidth > oldBound.width + 2*paddingX )
+    {
+        width = oldBound.width + 2*paddingX;
+    }
+    else
+    {
+        width = distanceXandWidth;
+    }
+    int height = 0;
+    int distanceYandHeight = currentImage.size().height - y;
+    if( distanceYandHeight > oldBound.height + 2*paddingY )
+    {
+        height = oldBound.height + 2*paddingY;
+    }
+    else
+    {
+        height = distanceYandHeight;
+    }
+
+    return cv::Rect( x, y, width, height );
+}
+
+
+cv::Rect TrackingReforming::enlargeRect(cv::Rect oldBound)
+{
+    int paddingX = oldBound.width  * 0.60;
+    int paddingY = oldBound.height * 0.1;
+
+	return enlargeRect(oldBound, paddingX, paddingY);
+}
+
+
 void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundaries )
 {
     std::map<int, cv::Rect>::iterator it1;
@@ -139,35 +180,14 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
         cv::Rect oldBound = it1->second;
 
         // calculate position and size for bigger border
-        int paddingX = currentImage.size().width  * 0.10;
-        int paddingY = currentImage.size().height * 0.05;
-        int x = ( oldBound.x < paddingX ) ? 0 : oldBound.x - paddingX;
-        int y = ( oldBound.y < paddingY ) ? 0 : oldBound.y - paddingY;
-        int width = 0;
-        int distanceXandWidth = currentImage.size().width - x;
-        if( distanceXandWidth > oldBound.width + 2*paddingX )
-        {
-            width = oldBound.width + 2*paddingX;
-        }
-        else
-        {
-            width = distanceXandWidth;
-        }
-        int height = 0;
-        int distanceYandHeight = currentImage.size().height - y;
-        if( distanceYandHeight > oldBound.height + 2*paddingY )
-        {
-            height = oldBound.height + 2*paddingY;
-        }
-        else
-        {
-            height = distanceYandHeight;
-        }
-        cv::Rect biggerBoundary = cv::Rect( x, y, width, height );
+
+        cv::Rect biggerBoundary = enlargeRect(oldBound);
         cv::Rect bB = biggerBoundary;
 
 		// ## DEBUG
 		cv::rectangle(debugImage,bB,cv::Scalar(180,0,180),4);
+        std::string idSTR = cv::format("%i", it1->first);
+        cv::putText(debugImage, idSTR, bB.tl(),0, (double)4/3.0, cv::Scalar(180,0,180), 4/1.25);
 
 
         // look for adequate boundaries from boundariesChecked and check if found
@@ -192,11 +212,49 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
 
 				// ## DEBUG
 				cv::rectangle(debugImage, nB,cv::Scalar(255,255,0),2);
+
+
+                for(int boundsIdx = 0; boundsIdx < boundariesChecked.size(); ++boundsIdx)
+                {
+                    if(boundariesChecked[boundsIdx].second == it1->first)
+                    {
+                        cv::Point thisTL = cv::Point(nB.x,nB.y);
+                        cv::Point thisBR = cv::Point(nBx2,nBy2);
+                        cv::Rect boxInSame = boundariesChecked[boundsIdx].first;
+                        cv::Point boxInSameTR= boxInSame.tl() + cv::Point(boxInSame.width,0);
+                        cv::Point boxInSameBL = boxInSame.br() - cv::Point(boxInSame.width,0);
+
+                        cv::Rect maxOutlieArea = enlargeRect(it3->first,90,90);
+
+						cv::rectangle(debugImage, maxOutlieArea, cv::Scalar(0,0,255),2);
+
+                        bool tlIn = maxOutlieArea.contains(boxInSame.tl());
+                        bool trIn = maxOutlieArea.contains(boxInSameTR);
+                        bool blIn = maxOutlieArea.contains(boxInSameBL);
+                        bool brIn = maxOutlieArea.contains(boxInSame.br());
+
+
+                        if(!(tlIn || trIn || blIn || brIn))
+                        {
+                            int newId;
+                            for(newId = 0; m_calculatedBoundaries.count(newId); ++newId)
+                            {}
+                            m_calculatedBoundaries.insert( std::make_pair( newId,it3->first ) );
+                            m_calculatedClasses.insert(std::make_pair( newId, cv::Vec3i(0,0,0) ) );
+                            it3->second = newId;
+                        }
+
+
+                    }
+                }
+
+				// ## DEBUG
+				cv::rectangle(debugImage, nB,cv::Scalar(110,110,0),2);
             }
         }
         // remove current "old" boundary, if ...
         if( newBoundaryInside == false      // ... no proper new one was found, or ...
-         || ( x <= 3 && y <= 3 && currentImage.size().width - width <= 3 && currentImage.size().height - height <= 3 ) ) //< ... boundary is too big
+         || ( biggerBoundary.x <= 3 && biggerBoundary.y <= 3 && currentImage.size().width - biggerBoundary.width <= 3 && currentImage.size().height - biggerBoundary.height <= 3 ) ) //< ... boundary is too big
         {
 			m_calculatedClasses.erase(it1->first);
             m_calculatedBoundaries.erase( it1++ );
@@ -248,13 +306,13 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
 
 			// ## DEBUG
 			cv::rectangle(debugImage,it3->first,cv::Scalar(10,10,10),3);
-			std::string idStr = cv::format("i%",id);
+            std::string idStr = cv::format("%i",id);
 			cv::putText(debugImage,idStr, (it3->first).tl(), 0, (double)4/3.0, cv::Scalar(10,10,10), 4/1.25);
         }
     }
 
 	// ## DEBUG
-	cv::imshow("bBdebug", debugImage);
+	//cv::imshow("bBdebug", debugImage);
 
 }
 

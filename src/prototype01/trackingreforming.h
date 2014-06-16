@@ -23,6 +23,8 @@ public:
 
 private:
     void calculateNewBoundaries( std::vector<cv::Rect>& boundaries );
+    cv::Rect TrackingReforming::enlargeRect(cv::Rect oldBound, int paddingX, int paddingY);
+	cv::Rect enlargeRect(cv::Rect old);
 	void drawDebugBigBox(cv::Rect bigBox, cv::Mat& image);
 	void showDebug(cv::Mat image);
 
