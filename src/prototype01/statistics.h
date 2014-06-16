@@ -8,6 +8,8 @@ class Statistics
 public:
     Statistics();
 
+    void clear();
+
     void setCompleteFrameCount( const unsigned int completeFrameCount );
     void incrementFrameCount( const unsigned int frameCount = 1  );
     void incrementBoundaryCount( const unsigned int boundaryCount = 1 );

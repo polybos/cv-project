@@ -34,6 +34,7 @@ void ParameterEvaluator::run()
 
         mainLoop();
         saveStatistic();
+        m_statistics->clear();
 
         m_fileLoader->setSequencePosition( 0 );
         m_classificationParameter.pop(); // at the end, because statistics need current parameter

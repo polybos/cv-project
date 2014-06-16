@@ -64,8 +64,8 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
         cv::Rect oldBound = it1->second;
 
         // calculate position and size for bigger border
-        int paddingX = currentImage.size().width  * 0.10;
-        int paddingY = currentImage.size().height * 0.05;
+        int paddingX = currentImage.size().width  * 0.35;
+        int paddingY = currentImage.size().height * 0.15;
         int x = ( oldBound.x < paddingX ) ? 0 : oldBound.x - paddingX;
         int y = ( oldBound.y < paddingY ) ? 0 : oldBound.y - paddingY;
         int width = 0;
@@ -155,6 +155,7 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
         {
             // get first unused id
             unsigned int id = 0;
+
             for( std::map<int, cv::Rect>::iterator it = m_calculatedBoundaries.begin(); it != m_calculatedBoundaries.end() && id == it->first; ++it, ++id )
             {
                 m_calculatedBoundaries.insert( std::make_pair( id,it3->first ) );
