@@ -1,6 +1,7 @@
 #include "trackingreforming.h"
 
 #include <vector>
+#include <set>
 
 #include<iostream>
 
@@ -224,7 +225,7 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
                         cv::Point boxInSameTR= boxInSame.tl() + cv::Point(boxInSame.width,0);
                         cv::Point boxInSameBL = boxInSame.br() - cv::Point(boxInSame.width,0);
 
-                        cv::Rect maxOutlieArea = enlargeRect(it3->first,90,90);
+                        cv::Rect maxOutlieArea = enlargeRect(it3->first,120,90);
 
 						cv::rectangle(debugImage, maxOutlieArea, cv::Scalar(0,0,255),2);
 
@@ -297,12 +298,13 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
         {
             // get first unused id
             unsigned int id = 0;
-			while(m_calculatedBoundaries.count(id) > 0)
-			{
-				id++;
-			}
+
+            while(m_calculatedBoundaries.count(id) > 0)
+            {
+                id++;
+            }
             m_calculatedBoundaries.insert( std::make_pair( id,it3->first ) );
-			m_calculatedClasses.insert(std::make_pair( id, cv::Vec3i(0,0,0) ) );
+            m_calculatedClasses.insert(std::make_pair( id, cv::Vec3i(0,0,0) ) );
 
 			// ## DEBUG
 			cv::rectangle(debugImage,it3->first,cv::Scalar(10,10,10),3);
@@ -311,8 +313,41 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
         }
     }
 
+    // look for boundary inside another boundary
+    std::map<int, cv::Rect>::iterator it1_2;
+    std::set<int> deleteKeys;
+    for( it1 = m_calculatedBoundaries.begin(); it1 != m_calculatedBoundaries.end() && it1 != --m_calculatedBoundaries.end() ; ++it1 )
+    {
+        cv::Rect bound1 = it1->second;
+        it1_2 = it1;
+        for( ++it1_2; it1_2 != m_calculatedBoundaries.end(); ++it1_2 )
+        {
+            cv::Rect bound2 = it1_2->second;
+
+            if( bound1.contains( bound2.tl() ) && bound1.contains( bound2.br() ) )
+            {
+                deleteKeys.insert( it1_2->first );
+            }
+            else
+            {
+                if( bound2.contains( bound1.tl() ) && bound2.contains( bound1.br() ) )
+                {
+                    deleteKeys.insert( it1->first );
+                }
+            }
+        }
+    }
+
+    std::set<int>::iterator delIt;
+    for( delIt = deleteKeys.begin(); delIt != deleteKeys.end(); ++delIt )
+    {
+        int index = *delIt;
+        m_calculatedBoundaries.erase( index );
+    }
+
 	// ## DEBUG
-	//cv::imshow("bBdebug", debugImage);
+    cv::imshow("bBdebug", debugImage);
+
 
 }
 

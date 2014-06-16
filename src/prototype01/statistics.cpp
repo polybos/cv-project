@@ -12,6 +12,17 @@ Statistics::Statistics()
     }
 }
 
+void Statistics::clear()
+{
+    m_frameCount = 0;
+    m_completeFrameCount = 0;
+    m_boundaryCount = 0;
+    for( int i = 0; i < eTrafficClassSize; i++ )
+    {
+        m_detectedObjectsCount[i] = 0;
+    }
+}
+
 void Statistics::setCompleteFrameCount(const unsigned int completeFrameCount)
 {
     m_completeFrameCount = completeFrameCount;
