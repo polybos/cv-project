@@ -37,7 +37,7 @@ int main( int argc, char** argv )
     m_trackingReforming->setFileLoader( m_fileLoader );
     m_classification->setFileLoader( m_fileLoader );
     m_display->setFileLoader( m_fileLoader );
-//    m_display->setTrackingObject( m_tracking );
+    m_display->setTrackingObject( m_tracking );
 //    m_display->setClassifcationObject( m_classification );
 
 #ifdef PARAMETERTEST
@@ -60,7 +60,7 @@ int main( int argc, char** argv )
         // Step3.1: Calculate tracking of moved objects
 		boundaries = m_tracking->getBoundariesOfMovement();
         //debug output
-//        m_tracking->displayDebugWindows();
+        m_tracking->displayDebugWindows();
 
         // Step3.2: Improve boundaries
         m_trackingReforming->registerCurrentBoundaries( boundaries );
@@ -71,6 +71,8 @@ int main( int argc, char** argv )
         m_classification->setBoundariesOfMovement( boundaries );
         m_classification->runClassifier();
         classificationResults = m_classification->getTrafficClasses();
+
+		m_trackingReforming->getNewClasses(classificationResults);
 
         // Step5: Display results
         m_display->setClassificationResults( classificationResults );

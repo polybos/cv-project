@@ -3,9 +3,12 @@
 #include <vector>
 #include <set>
 
+#include<iostream>
+
 TrackingReforming::TrackingReforming()
     :m_fileLoader()
     ,m_calculatedBoundaries()
+	,m_calculatedClasses()
 {    
 }
 
@@ -18,14 +21,16 @@ void TrackingReforming::registerCurrentBoundaries( std::vector<cv::Rect>& bounda
 {
     if( m_fileLoader->getSequencePosition() == 0 || boundaries.size() == 0 ) //< first frame with boundaries
     {
+		m_calculatedBoundaries.clear();
         return;
     }
     int id = 0;
-    std::vector<cv::Rect>::iterator it;
+    /*std::vector<cv::Rect>::iterator it;
     for( it = boundaries.begin(); it != boundaries.end(); ++it )
     {
+		m_calculatedClasses.insert(std::make_pair( id, cv::Vec3i(0,0,0) ) );
         m_calculatedBoundaries.insert( std::make_pair( id++, *it ) );
-    }
+    }*/
 
     calculateNewBoundaries( boundaries );
 }
@@ -40,6 +45,69 @@ std::vector<cv::Rect> TrackingReforming::getNewBoundaries()
     }
 
     return returnVector;
+}
+
+void TrackingReforming::getNewClasses(std::vector< std::pair<cv::Rect, TrafficClass> >& classificationResults)
+{
+	const int MIN_CLASSRECONGNITIONS = 3;
+
+	 std::map<int, cv::Rect>::iterator boundaryIt;
+	 int vectorIdx = 0;
+	 for(boundaryIt = m_calculatedBoundaries.begin(); boundaryIt != m_calculatedBoundaries.end(); ++boundaryIt)
+	 {
+		 int id = boundaryIt->first;
+		 std::cout << "id: " << id << std::endl;
+		 /*cv::Vec3i classCount = m_calculatedClasses.at(id);*/
+		 
+		 switch ( classificationResults[vectorIdx].second )
+        {
+        case car:
+			m_calculatedClasses.at(id)[0] += 1;
+            break;
+        case human:
+            m_calculatedClasses.at(id)[1] += 1;
+            break;
+        case bicycle:
+            m_calculatedClasses.at(id)[2] += 1;
+            break;
+        default:
+            break;
+        }
+
+		 // find the class the rect got most identified with
+		int bestClassIdx = 0;
+		for(int i = 0; i<3;++i)
+		{
+			if(m_calculatedClasses.at(id)[i] > m_calculatedClasses.at(id)[bestClassIdx])
+			{
+				bestClassIdx = i;
+			}
+		}
+
+		// only change class, when at least MIN_CLASSRECOGNITIONS with this class were reported for this rect
+		if(m_calculatedClasses.at(id)[bestClassIdx] < MIN_CLASSRECONGNITIONS)
+		{
+			++vectorIdx;
+			continue;
+		}
+		  
+		switch ( bestClassIdx )
+        {
+        case 0:
+			classificationResults[vectorIdx].second = car;
+            break;
+        case 1:
+			classificationResults[vectorIdx].second = human;
+            break;
+        case 2:
+			classificationResults[vectorIdx].second = bicycle;
+            break;
+        default:
+            break;
+        }
+		++vectorIdx;
+	 }
+	 std::cout << "-------------------" << std::endl;
 }
 
 // ---------------
@@ -59,6 +127,13 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
     }
 
     cv::Mat currentImage = m_fileLoader->getCurrentImage();
+	
+	
+	// ## DEBUG
+	cv::Mat debugImage = currentImage.clone();
+
+
+
 
     for( it1 = m_calculatedBoundaries.begin(); it1 != m_calculatedBoundaries.end(); )
     {
@@ -92,6 +167,10 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
         cv::Rect biggerBoundary = cv::Rect( x, y, width, height );
         cv::Rect bB = biggerBoundary;
 
+		// ## DEBUG
+		cv::rectangle(debugImage,bB,cv::Scalar(180,0,180),4);
+
+
         // look for adequate boundaries from boundariesChecked and check if found
         bool newBoundaryInside = false;
         for( it3 = boundariesChecked.begin(); it3 != boundariesChecked.end(); ++it3 )
@@ -111,12 +190,16 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
             {
                 it3->second = it1->first; //< register new boundary to cumulated boundary
                 newBoundaryInside = true;
+
+				// ## DEBUG
+				cv::rectangle(debugImage, nB,cv::Scalar(255,255,0),2);
             }
         }
         // remove current "old" boundary, if ...
         if( newBoundaryInside == false      // ... no proper new one was found, or ...
          || ( x <= 3 && y <= 3 && currentImage.size().width - width <= 3 && currentImage.size().height - height <= 3 ) ) //< ... boundary is too big
         {
+			m_calculatedClasses.erase(it1->first);
             m_calculatedBoundaries.erase( it1++ );
         }
         else //< set new area of boundary
@@ -153,15 +236,23 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
     // insert all non-checked to m_calculatedBoundaries
     for( it3 = boundariesChecked.begin(); it3 != boundariesChecked.end(); ++it3 )
     {
-        if( it3->second == false )
+        if( it3->second < 0 )
         {
             // get first unused id
             unsigned int id = 0;
 
-            for( std::map<int, cv::Rect>::iterator it = m_calculatedBoundaries.begin(); it != m_calculatedBoundaries.end() && id == it->first; ++it, ++id )
+            while(m_calculatedBoundaries.count(id) > 0)
             {
-                m_calculatedBoundaries.insert( std::make_pair( id,it3->first ) );
+                id++;
             }
+            m_calculatedBoundaries.insert( std::make_pair( id,it3->first ) );
+            m_calculatedClasses.insert(std::make_pair( id, cv::Vec3i(0,0,0) ) );
+
+            // ## DEBUG
+            cv::rectangle(debugImage,it3->first,cv::Scalar(10,10,10),3);
+            std::string idStr = cv::format("i%",id);
+            cv::putText(debugImage,idStr, (it3->first).tl(), 0, (double)4/3.0, cv::Scalar(10,10,10), 4/1.25);
+
         }
     }
 
@@ -196,5 +287,19 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
         int index = *delIt;
         m_calculatedBoundaries.erase( index );
     }
+
+	// ## DEBUG
+	cv::imshow("bBdebug", debugImage);
+
+
+}
+
+void TrackingReforming::drawDebugBigBox(cv::Rect bigBox, cv::Mat& image)
+{
+
+}
+
+void TrackingReforming::showDebug(cv::Mat image)
+{
 
 }
