@@ -59,7 +59,7 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
 
     cv::Mat currentImage = m_fileLoader->getCurrentImage();
 
-    for( it1 = m_calculatedBoundaries.begin(); it1 != m_calculatedBoundaries.end(); ++it1 )
+    for( it1 = m_calculatedBoundaries.begin(); it1 != m_calculatedBoundaries.end(); )
     {
         cv::Rect oldBound = it1->second;
 
@@ -116,7 +116,7 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
         if( newBoundaryInside == false      // ... no proper new one was found, or ...
          || ( x <= 3 && y <= 3 && currentImage.size().width - width <= 3 && currentImage.size().height - height <= 3 ) ) //< ... boundary is too big
         {
-            m_calculatedBoundaries.erase( it1 );
+            m_calculatedBoundaries.erase( it1++ );
         }
         else //< set new area of boundary
         {
@@ -146,6 +146,7 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
             cv::Rect newBound = cv::Rect( x1, y1, width, height );
 
             m_calculatedBoundaries.at( it1->first ) = newBound;
+			++it1;
         }
     }
     // insert all non-checked to m_calculatedBoundaries
