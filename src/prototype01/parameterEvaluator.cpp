@@ -35,6 +35,7 @@ void ParameterEvaluator::run()
         mainLoop();
         saveStatistic();
         m_statistics->clear();
+        printParameterStatistic( m_parameterStatistics.top() );
 
         m_fileLoader->setSequencePosition( 0 );
         m_classificationParameter.pop(); // at the end, because statistics need current parameter
@@ -79,26 +80,8 @@ void ParameterEvaluator::outputStatistics()
 
     while( m_parameterStatistics.size() > 0 )
     {
-        ParameterStatistic parameterStatistic = m_parameterStatistics.top();
+        printParameterStatistic( m_parameterStatistics.top() );
         m_parameterStatistics.pop();
-
-        ClassificationTriplet triplet = parameterStatistic.triplet;
-
-        std::cout << "scaleFactor = ";
-        printElement( triplet.scaleFactor, 3 );
-        std::cout << " minNeighbours = ";
-        printElement( triplet.minNeighbours, 1 );
-        std::cout << " minSize = ";
-        printElement( triplet.minSize, 2);
-        std::cout << " | ";
-
-        std::cout << "cars = ";
-        printElement( parameterStatistic.detectedObjectsCount[car], 3 );
-        std::cout << " human = ";
-        printElement( parameterStatistic.detectedObjectsCount[human], 3 );
-        std::cout << " bicycle = ";
-        printElement( parameterStatistic.detectedObjectsCount[bicycle], 3 );
-        std::cout << std::endl;
     }
 }
 
@@ -185,6 +168,27 @@ void ParameterEvaluator::setDefaultTestParameter()
         }
     }
 
+}
+
+void ParameterEvaluator::printParameterStatistic( const ParameterStatistic parameterStatistic )
+{
+    const ClassificationTriplet triplet = parameterStatistic.triplet;
+
+    std::cout << "scaleFactor = ";
+    printElement( triplet.scaleFactor, 3 );
+    std::cout << " minNeighbours = ";
+    printElement( triplet.minNeighbours, 1 );
+    std::cout << " minSize = ";
+    printElement( triplet.minSize, 2);
+    std::cout << " | ";
+
+    std::cout << "cars = ";
+    printElement( parameterStatistic.detectedObjectsCount[car], 3 );
+    std::cout << " human = ";
+    printElement( parameterStatistic.detectedObjectsCount[human], 3 );
+    std::cout << " bicycle = ";
+    printElement( parameterStatistic.detectedObjectsCount[bicycle], 3 );
+    std::cout << std::endl;
 }
 
 template<typename T> void ParameterEvaluator::printElement(T t, const int& width)

@@ -52,6 +52,7 @@ private:
     void setDefaultTestParameter();
     void saveStatistic(); //< should be called, when one calculation is finish
 
+    void printParameterStatistic( const ParameterStatistic parameterStatistic );
     template<typename T> void printElement( T t, const int &width ); //< simple helper function for nice output
 };
 

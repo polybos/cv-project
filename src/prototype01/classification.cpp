@@ -59,7 +59,7 @@ TrafficClass Classification::getTrafficClassOfBoundary( cv::Rect boundary )
     cv::Mat m_currentImage = m_fileLoader->getCurrentImage();
 
     // calculate position and size for bigger border
-    int padding = 20;
+    int padding = 50;
     int x = ( boundary.x < padding ) ? 0 : boundary.x - padding;
     int y = ( boundary.y < padding ) ? 0 : boundary.y - padding;
     int width = 0;
