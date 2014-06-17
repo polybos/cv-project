@@ -56,7 +56,7 @@ void TrackingReforming::getNewClasses(std::vector< std::pair<cv::Rect, TrafficCl
 	 for(boundaryIt = m_calculatedBoundaries.begin(); boundaryIt != m_calculatedBoundaries.end(); ++boundaryIt)
 	 {
 		 int id = boundaryIt->first;
-		 std::cout << "id: " << id << std::endl;
+		 //std::cout << "id: " << id << std::endl;
 		 /*cv::Vec3i classCount = m_calculatedClasses.at(id);*/
 		 
 		 switch ( classificationResults[vectorIdx].second )
@@ -107,7 +107,7 @@ void TrackingReforming::getNewClasses(std::vector< std::pair<cv::Rect, TrafficCl
         }
 		++vectorIdx;
 	 }
-	 std::cout << "-------------------" << std::endl;
+	 //std::cout << "-------------------" << std::endl;
 }
 
 // ---------------
@@ -227,7 +227,7 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
 
                         cv::Rect maxOutlieArea = enlargeRect(it3->first,120,90);
 
-						cv::rectangle(debugImage, maxOutlieArea, cv::Scalar(0,0,255),2);
+						//cv::rectangle(debugImage, maxOutlieArea, cv::Scalar(0,0,255),2);
 
                         bool tlIn = maxOutlieArea.contains(boxInSame.tl());
                         bool trIn = maxOutlieArea.contains(boxInSameTR);
@@ -286,6 +286,8 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
             width = ( width > 0 ) ? width : 0;
             height = ( height > 0 ) ? height : 0;
             cv::Rect newBound = cv::Rect( x1, y1, width, height );
+
+			cv::rectangle(debugImage,newBound,cv::Scalar(255,0,0),2);
 
             m_calculatedBoundaries.at( it1->first ) = newBound;
 			++it1;
@@ -346,7 +348,7 @@ void TrackingReforming::calculateNewBoundaries( std::vector<cv::Rect>& boundarie
     }
 
 	// ## DEBUG
-    cv::imshow("bBdebug", debugImage);
+    //cv::imshow("bBdebug", debugImage);
 
 
 }
