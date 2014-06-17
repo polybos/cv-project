@@ -21,7 +21,7 @@ Classification::Classification()
     ,m_cc_bicycle( cv::CascadeClassifier( ) )
     ,m_currentImage()
     ,m_scaleFactor( 1.1 )
-    ,m_minNeighbours( 2 )
+    ,m_minNeighbours( 1 )
     ,m_minSize( 40 )
 
 {
