@@ -14,6 +14,8 @@ statistics.cpp
 statistics.h
 tracking.cpp
 tracking.h
+myBGSubMog2.h
+myBGSubMog2.cpp
 trackingreforming.cpp
 trackingreforming.h )
 
