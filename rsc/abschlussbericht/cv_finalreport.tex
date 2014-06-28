@@ -127,7 +127,7 @@
 % *** GRAPHICS RELATED PACKAGES ***
 %
 \ifCLASSINFOpdf
-  % \usepackage[pdftex]{graphicx}
+  \usepackage[pdftex]{graphicx}
   % declare the path(s) where your graphic files are
   % \graphicspath{{../pdf/}{../jpeg/}}
   % and their extensions so you won't have to specify these with
@@ -137,7 +137,7 @@
   % or other class option (dvipsone, dvipdf, if not using dvips). graphicx
   % will default to the driver specified in the system graphics.cfg if no
   % driver is specified.
-  % \usepackage[dvips]{graphicx}
+  \usepackage[dvips]{graphicx}
   % declare the path(s) where your graphic files are
   % \graphicspath{{../eps/}}
   % and their extensions so you won't have to specify these with
@@ -164,7 +164,7 @@
 % You can find documentation about the pdfTeX application at:
 % http://www.tug.org/applications/pdftex
 
-
+\usepackage{fixltx2e}
 
 
 
@@ -320,7 +320,7 @@
 % (Unless specifically asked to do so by the journal or conference you plan
 % to submit to, of course. )
 
-\usepackage{soul}
+%\usepackage{soul}
 
 
 % correct bad hyphenation here
@@ -376,8 +376,6 @@ Magdeburg}}
 %\IEEEspecialpapernotice{(Invited Paper)}
 
 
-
-
 % make the title area
 \maketitle
 
@@ -388,9 +386,6 @@ Magdeburg}}
 %\end{abstract}
 
 % no keywords
-
-
-
 
 % For peer review papers, you can put extra information on the cover
 % page as needed:
@@ -403,7 +398,6 @@ Magdeburg}}
 \IEEEpeerreviewmaketitle
 
 
-
 \section{Einleitung}
 % no \IEEEPARstart
 
@@ -411,15 +405,15 @@ Magdeburg}}
  
 %\hfill  28. Juni 2014
 
+
 \subsection{Ziel des Projektes}
 Im Rahmen des Projektes soll eine Bewegungssegmentierung implementiert werden, welche auf Verkehrsszenen mit starrer Kamera angewandt wird. Zusätzlich sollen die segmentierten Objekte in eine der drei Klassen \textit{Fußgänger}, \textit{Radfahrer} und \textit{Auto} eingeordnet werden. Herausforderungen dabei sind (Teil-)Verdeckungen, variable Beleuchtung und Fehler des Aufnahmesystems (Lensflares).
 
 \subsection{Überblick über das Verfahren}
-Unser Ansatz Besteht im Wesentlichen aus drei Schritten: Segmentierung, Klassifikation, Nachverarbeitung. Die Segmentierung erstellt mittels Backgroundsubstraction eine Vordergrundmaske, die durch eine Connected Component Analyse in einzelne Objekte gegliedert wird. Diese Objekte werden an einen Haar-Cascade-Klassifikator weitergereicht, der zuvor auf die drei o.g. Klassen trainiert wurde. Zum Schluss führen wir in einem Nachverarbeitungsschritt Objekte in einer kleinen Nachbarschaft zusammen, um Objektzersplitterung durch Fehlsegmentierung oder Teilverdeckung zu vermeiden.
+Unser Ansatz besteht im Wesentlichen aus drei Schritten: Segmentierung, Klassifikation, Nachverarbeitung. Die Segmentierung erstellt mittels Backgroundsubstraction eine Vordergrundmaske, die durch eine Connected Component Analyse in einzelne Objekte gegliedert wird. Diese Objekte werden an einen Haar-Cascade-Klassifikator weitergereicht, der zuvor auf die drei o.g. Klassen trainiert wurde. Zum Schluss führen wir in einem Nachverarbeitungsschritt Objekte in einer kleinen Nachbarschaft zusammen, um Objektzersplitterung durch Fehlsegmentierung oder Teilverdeckung zu vermeiden.
 
 \subsection{Verwendete Bibliotheken}
 Das Projekt wurde in der Programmiersprache C++, nach Standard ISO/IEC 14882:2011 aka C++11 umgesetzt. Abgesehen von der STL wurde als einzige Bibliothek OpenCV \cite{opencv} in Version 2.4.8/2.4.9 eingesetzt. Um plattformunabhängig entwickeln zu können wurde CMake \cite{cmake} als Meta-Buildsystem genutzt. Die Projektverwaltung erfolgte mittels Git \cite{git} auf GitHub \cite{github}.
-
 
 % An example of a floating figure using the graphicx package.
 % Note that \label must occur AFTER (or within) \caption.
@@ -504,12 +498,16 @@ Das Projekt wurde in der Programmiersprache C++, nach Standard ISO/IEC 14882:201
 % footnotes above bottom floats. This can be corrected via the \fnbelowfloat
 % command of the stfloats package.
 
-
-
 \section{Verfahren}
 
-\subsection{Segmentierung }
-Für die Bewegungssegmentierung nutzen wir den von OpenCV bereitgestellten \textit{BackgroundSubstractorMOG2}, der das Gaussian Mixture Model nach dem Verfahren in \ul{Z.Zivkovic, Improved adaptive Gausian mixture model for background subtraction} benutzt. Dabei verzichten wir jedoch auf die eingebaute Schattensegmentierung, da diese nicht zuverlässig genug für uns ist. Durch empirische Untersuchung haben sich folgende Parametereinstellungen als zufriedenstellend erwiesen:
+\subsection{Segmentierung}
+
+\begin{figure}
+\includegraphics[width=0.5\textwidth]{ds10_contour}
+\caption{Schwierige Segmentierung}
+\end{figure}
+
+Für die Bewegungssegmentierung nutzen wir den von OpenCV bereitgestellten \textit{BackgroundSubstractorMOG2}, der das Gaussian Mixture Model nach dem Verfahren von Z. Zivkovic \cite{zivkovic} benutzt. Dabei verzichten wir jedoch auf die eingebaute Schattensegmentierung, da diese nicht zuverlässig genug für uns ist. Durch empirische Untersuchung haben sich folgende Parametereinstellungen als zufriedenstellend erwiesen:
 \begin{itemize}
 	\item nmixtures = 10
 	\item backgroundRatio = 0.9
@@ -520,7 +518,14 @@ Für die Bewegungssegmentierung nutzen wir den von OpenCV bereitgestellten \text
 Um das Rauschen in der erstellten Maske zu unterdrücken filtern wir diese durch einen Medianfilter mit geringer Kernelgröße. Es kann passieren, dass nur Teile von einem Objekt segmentiert werden, die jedoch sehr nahe an einander liegen. Diese verbinden wir durch ein morphologisches closing.
 Damit wir nun aus der Maske einzelne Objekte erhalten, führen wir eine Connected Componend Analyse mittels der OpenCV-Funktion \textit{findContours} aus. Objekte die eine bestimmte Mindestgröße unterschrieten werden dabei entfernt. An den Klassifikator wird dann eine bounding Box für jede erkannte Kontur weitergereicht.
 
+
+
 \subsection{Klassifikation}
+
+\begin{figure*}
+\includegraphics[width=\textwidth]{ds03_car01}
+\caption{Ergebnis der Klassifikation auf mehreren ROI}
+\end{figure*}
 
 \subsubsection{Ursprüngliche Idee}
 
@@ -532,6 +537,7 @@ Da wir uns mit der Linienkomponente nicht sehr sicher waren, die Detektion von s
 Die Klassifikation ist schlussendlich über einen Haar-Feature-Cascade-Classifier implementiert.
 Dafür wird für jede Klasse eine eigens trainierte Klassifikationsdatei im XML-Format benötigt. Da wir die Klassen \textit{Auto}, \textit{Mensch} und \textit{Fahrrad} unterscheiden wollen benötigen wir drei Klassifikationsdateien. Diese XML-Dateien werden bei Programmstart geladen und teilen dem Klassifikator die Parameter mit, auf die er reagieren soll. Anschließend können wir den Klassifikator auf eine beliebige Region-Of-Interest (ROI) anwenden. Als Ergebnis erhalten wir eine Liste von Bereichen innerhalb der ROI mit erkannten Objekten. Somit bekommen wir unter anderem ein binäres Ergebnis - \textit{gefunden} wenn die Liste mindestens einen Eintrag hat oder \textit{nicht gefunden} wenn die Liste leer ist. Der Vorteil an dieser Methode liegt darin, dass wir somit mehrere Objekte innerhalb einer gegebenen ROI erkennen können. Wenn wir uns allerdings sicher sind, dass die gegebene ROI nur ein Objekt enthalten kann, fällen wir das Urteil anhand der Schwierigkeit der Detektion der Klasse und Anzahl der gefundenen Bereiche. Somit entscheiden wir uns für die Klasse Fahrrad, sobald der Klassifikator mindestens ein Fahrrad gefunden hat, da dies für unseren Klassifikator die am schwierigsten zu detektierende Klasse ist. Dass auf den meisten Fahrrädern Menschen sitzen ist ein weiterer Grund die Klassifikation nach Menschen erst durchzuführen, wenn kein Fahrrad erkannt wurde.
 Wenn kein Fahhrad in der ROI gefunden wurde, wird anschließend nach Menschen gesucht und zuletzt nach Autos.
+
 
 \subsubsection{Training}
 
@@ -560,10 +566,19 @@ Mit Hilfe eines dichten optischen Flusses, hatten wir uns erhofft sowohl die Seg
 \subsubsection{Tracking durch SURF Features}
 Als weiteren Ansatz zum Tracken haben wir mit SURF Features experimentiert um in einem Frame erkannte Objekte im nächsten Frame wider zu finden. Dies hat auch akzeptable Ergebnisse für Autos geliefert, da sich bei diesen die Features von Frame zu Frame nicht zu stark ändern. Bei Fußgängern und Radfahrern hingegen schlug dieser Ansatz komplett fehl.
 
+
+
 \section{Evaluierung}
 
+\begin{figure}
+\includegraphics[width=0.5\textwidth]{ds13_car01}
+\caption{Erfolgreiche Segmentierung und Klassifikation}
+\end{figure}
+
+
 Die Evaluierung zeigt ein durchwachsenes Bild.
-Unser Ansatz hat auf den Datensätzen 1 bis 7 und 13 und 14 gut funktioniert. Auf den Datensätzen 8 bis 12 dagegeben gab es Probleme. Generell hat sich gezeigt, dass die Segmentierung meist gut funktioniert, die Klassifkation dagegen nicht robust ist. Gerade wenn sich die Art des Datensatzes stark von den Arten der Trainingsdatensätze ändert, fallen starke Mängel in der Klassifikation auf. Bei den Testdatensätzen 8 bis 12 zeigt sich, dass es Kamerapositionen gibt, mit denen nicht trainiert wurde und somit der Klassifikator wenig Chancen hat, seine Arbeit erfolgreich zu erledigen.
+Unser Ansatz hat auf den Datensätzen 3 bis 7 und 13 gut bis sehr gut funktioniert. Auf den restlichen Datensätzen hat unser Verfahren mittelgute bis schlechte Ergebnisse erzielt. Generell hat sich gezeigt, dass die Segmentierung meist gut bis sehr gut funktioniert, die Klassifkation dagegen nicht so robust ist.
+Vor allem wenn sich die Art des Datensatzes stark von den Trainingsdatensätzen unterscheidet, fallen starke Mängel in der Klassifikation auf. Bei den Testdatensätzen 8 bis 12 zeigt sich beispielsweise, dass der Klassifkator mit den Kamerapositionen nicht klarkommt, da mit keinen Positivbildern aus diesen Perspektiven trainiert wurde und somit der Klassifikator nur wenig Chancen hat, seine Arbeit erfolgreich zu erledigen.
 Andererseits zeigte sich, dass unser Verfahren sehr schnell ist und wir je nach Datensatz ein bis mehrere Bilder pro Sekunde mit der kompletten Pipeline an Berechnungen erhalten.
 
 
@@ -577,6 +592,11 @@ Für perfekte Ergebnisse müssten allerdings die Algorithmen umgestellt werden. 
 Bei der Klassifikation müsste man für unterschiedliche Klassen unterschiedliche Verfahren nutzen. Für Autos könnte man das aktuelle Verfahren, d.h. den Haar-Feature-Cascade-Classifier beibehalten. Für Menschen und Fahrräder könnte man beispielsweise auf einen HOG-Cascade-Classifier wechseln um bessere Ergebnisse zu erzielen.
 Zusätzlich sollte man - wie bereits erwähnt - die Ergebnisse von Klassifikator und Segmentierungsroutine ineinander einfließen lassen. So könnte man zu Beginn einer Sequenz die Klassifikatoren auf dem gesamten Bild nach potentiellen Objekten suchen lassen. Anschließen merkt man sich diese Region-Of-Interests für potentielle Bewegungen vor. Weiterhin könnte man bei getrackten Objekten die Klassifikation robuster gestalten, indem man sich für ein Objekt die detektierte Klasse merkt und einen sprunghaften Wechsel der Klasse von getrackten Objekten verhindert.
 
+
+\begin{figure}
+\includegraphics[width=0.5\textwidth]{ds06_failed}
+\caption{Fehlerhafte Klassifikation}
+\end{figure}
 
 
 % conference papers do not normally have an appendix
@@ -622,6 +642,8 @@ Zusätzlich sollte man - wie bereits erwähnt - die Ergebnisse von Klassifikator
 		\url{http://git-scm.com/}
 	\bibitem{github}
 		\url{https://github.com/polybos/cv-project}
+	\bibitem{zivkovic}
+		Z.Zivkovic, Improved adaptive Gausian mixture model for background subtraction
 	\bibitem{Seo:Haartraining}
 		\url{http://note.sonots.com/SciSoftware/haartraining.html}
 	\bibitem{Caltech256}
