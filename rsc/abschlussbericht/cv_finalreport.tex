@@ -548,12 +548,17 @@ Zusätzlich hat der Autor mit \textit{mergevec.cpp} und \textit{createtrainsampl
 Für das Training der Klassifikationsdatei für Autos haben wir ausschließlich Positivbilder aus den gegebenen Testdaten erzeugt. Für die Fahrräder haben wir zusätzlich zu den gegebenen Testdaten noch Fahrradbilder aus einem frei verfügbaren Datensatz\cite{Caltech256} als zusätzliche Positivbilder genutzt. In beiden Fällen wurde der Datensatz der Negativbilder aus einer größeren Bildersammlung sowie den Positivbildern der jeweils anderen Klassen erstellt.
 
 \subsection{Nachverarbeitung}
+Um das Problem von Teilverdeckungen zu beheben, haben wir einen einfachen Nachverarbeitungsschritt entwickelt, der ähnliche Aufgaben, wie ein aufwändigeres Tracken übernehmen soll. Dazu gehen wir davon aus, dass wir im vorherigen Frame ein Objekt \textit{A} mit der bounding Box \textit{b} detektiert haben. Im aktuellen Frame wird dann in einem Bereich \textit{b'=s*b} nach neu detektierten Objekten gesucht. Dabei ist \textit{s} ein non-uniformer Skalierungsfaktor, der in der horizontalen größer ist, als in der vertikalen, da wir davon ausgehen, dass sich die Objekte schneller in horizontaler, als in vertikaler Richtung bewegen. Liegt die bounding Box von einem oder mehreren neu detektierten Objekten komplett innerhalb von \textit{b'}, dann werden diese einem Gesamtobjekt zugeordnet. Dabei kann es passieren, dass sich gruppierte Objekte über das gesamte Bild ausdehnen. Daher wird eine Gruppierung aufglöst, sobald die gruppierten Objekte sich zu weit von einander entfernen.
+
+Weiterhin wird in diesem Nachverarbeitungsschritt für jedes gruppierte Objekt im aktuellen Frame geprüft, wie oft es in vergangenen Frames als welche Klasse klassifiziert wurde. Wenn ein gruppiertes Objekt \textit{O} mehr als \textit{X} mal einer bestimmten Klasse \textit{C} zugewiesen wurde und es den anderen Klassen weniger oft zugewiesen wurde, dann wird das Objekt \textit{O} der Klasse \textit{C} zugewiesen, auch wenn es im aktuellen Frame anders kalssiefiziert wurde.
 
 \subsection{Verworfene Bestandteile}
+Im laufe des Projektes wurden viele Verfahren getestet, um das Ziel zu erreichen. Die bisher beschriebenen haben sich dabei als am besten geeignet herausgestellt. In diesem Abschnitt möchten wir darauf eingehen, welche weiteren Verfahren getestet und danach wieder verworfen wurden und warum wir sie verworfen haben.
 
 \subsubsection{Optischer Fluss}
-
-\subsubsection{Tracking}
+Mit Hilfe eines dichten optischen Flusses, hatten wir uns erhofft sowohl die Segmentierung, als auch Teile des Trackens zu erledigen. Wir haben dazu mit der von OpenCV bereitgestellten Funktion \textit{calcOpticalFlowFarneback} experimentiert, jedoch keine passenden Parameter gefunden, die akzeptable Ergebnisse liefern. Da wir zu diesem Zeitpunkt bereits brauchbare Ergebnisse mit der Backgroundsubstraction erziehlt hatten, haben wir beschlossen unsere Zeit in die Verfeinerung dieses Verfahrens, sowie die Klassifizierung zu investieren. 
+\subsubsection{Tracking durch SURF Features}
+Als weiteren Ansatz zum Tracken haben wir mit SURF Features experimentiert um in einem Frame erkannte Objekte im nächsten Frame wider zu finden. Dies hat auch akzeptable Ergebnisse für Autos geliefert, da sich bei diesen die Features von Frame zu Frame nicht zu stark ändern. Bei Fußgängern und Radfahrern hingegen schlug dieser Ansatz komplett fehl.
 
 \section{Evaluierung}
 
