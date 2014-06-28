@@ -335,27 +335,27 @@ void Tracking::displayDebugWindows()
     namedWindow(windowName_debugDrawings, CV_WINDOW_KEEPRATIO);
     imshow(windowName_debugDrawings, debugImage);
 
-	string foldername = "debug6";
-	string imagename = "frame_";
-	string fileformat = ".jpg";
-	string folderCreateCommand = "mkdir " + foldername;
-	system(folderCreateCommand.c_str());
+	//string foldername = "debug6";
+	//string imagename = "frame_";
+	//string fileformat = ".jpg";
+	//string folderCreateCommand = "mkdir " + foldername;
+	//system(folderCreateCommand.c_str());
 
-	std::stringstream ss;
+	//std::stringstream ss;
 
-	ss  << foldername << "/" << imagename << m_fileLoader->getSequencePosition() << fileformat;
-	string path = ss.str();
-	ss.str("");
-	imwrite(path,debugImage);
+	//ss  << foldername << "/" << imagename << m_fileLoader->getSequencePosition() << fileformat;
+	//string path = ss.str();
+	//ss.str("");
+	//imwrite(path,debugImage);
 
-	/*namedWindow("fgMask", CV_WINDOW_KEEPRATIO);
-	imshow("fgMask", foregroundMask);
+	//namedWindow("fgMask", CV_WINDOW_KEEPRATIO);
+	//imshow("fgMask", foregroundMask);
 
-	namedWindow(windowName_background,CV_WINDOW_KEEPRATIO);
-	imshow(windowName_background,bgImage);*/
+	//namedWindow(windowName_background,CV_WINDOW_KEEPRATIO);
+	//imshow(windowName_background,bgImage);
 
-	namedWindow(windowName_erode,CV_WINDOW_KEEPRATIO);
-	imshow(windowName_erode,eroded);*/
+	//namedWindow(windowName_erode,CV_WINDOW_KEEPRATIO);
+	//imshow(windowName_erode,eroded);
 
 }
 
