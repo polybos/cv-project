@@ -322,11 +322,11 @@ void Tracking::displayDebugWindows()
     namedWindow(windowName_debugDrawings, CV_WINDOW_KEEPRATIO);
     imshow(windowName_debugDrawings, debugImage);
 
-	namedWindow(windowName_erode,CV_WINDOW_KEEPRATIO);
+	/*namedWindow(windowName_erode,CV_WINDOW_KEEPRATIO);
 	imshow(windowName_erode,eroded);
 
 	namedWindow(windowName_background,CV_WINDOW_KEEPRATIO);
-	imshow(windowName_background,bgImage);
+	imshow(windowName_background,bgImage);*/
 
 }
 
