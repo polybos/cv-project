@@ -1,11 +1,13 @@
 #include "tracking.h"
 #include <stdio.h>
+#include <sstream>
 
 using namespace cv;
 
 Tracking::Tracking() : 
 	learning_rate(0.1),
-	mog2BackgoundSubstractor(new BackgroundSubtractorMOG2(100,16,false)),
+	mog2BackgoundSubstractor(new BackgroundSubtractorMOG2()),
+	bgsubstr(myBGSubMog2()),
     m_contours(std::vector< std::vector<Point> >()),
     prevFrame_gray(Mat()),
     cornersToTrack(std::vector<Point2f>()),
@@ -17,6 +19,15 @@ Tracking::Tracking() :
     winSize(Size(20,20)),
     boundingBoxDirections(std::vector<Vec2f>())
 {
+	bgsubstr.setNMixtures(10);
+	bgsubstr.setBackgroundRatio(0.9);
+	bgsubstr.setHistorySize(45);
+	bgsubstr.setfTau(0.5);
+	bgsubstr.setVarThresholdGen(55);
+	bgsubstr.setVarThreshold(4);
+	bgsubstr.setfVarInit(60);
+	bgsubstr.setfVarMin(50);
+	bgsubstr.setfVarMax(70);
 }
 
 // ##########################
@@ -54,8 +65,8 @@ void Tracking::findBigBlobs(InputOutputArray image, double thresh)
 			contour_area = contourArea(contours[i]) ;
 			if ( contour_area < thresh)
 				small_blobs.push_back(i);
-			cv::drawContours(image, contours, i, cv::Scalar(255,255,255), 
-													 CV_FILLED, 8);
+			//cv::drawContours(image, contours, i, cv::Scalar(255,255,255), 
+													 //CV_FILLED, 8);
 		}
 	}
 
@@ -276,10 +287,11 @@ std::vector<cv::Rect> Tracking::getBoundariesOfMovement()
 
 	//########  mask generation and refinement  ###############
     //update the background model and generate mask
-	mog2BackgoundSubstractor->operator()(currentFrame, foregroundMask, learning_rate);
+	//mog2BackgoundSubstractor->operator()(currentFrame, foregroundMask, learning_rate);
+	bgsubstr(currentFrame, foregroundMask, learning_rate);
 
-	int erosion_size = 2;
-	int morphIterations = 4;
+	int erosion_size = 5;
+	int morphIterations = 1;//4;
 
 	//## Opening to refine mask
 	//Erosion(fgMaskMOG2,eroded,erosion_size,MORPH_RECT);
@@ -287,13 +299,14 @@ std::vector<cv::Rect> Tracking::getBoundariesOfMovement()
 	/*Dilation(eroded,opened,erosion_size,MORPH_ELLIPSE,morphIterations);
 	Erosion(eroded,opened,erosion_size,MORPH_ELLIPSE,morphIterations);*/
 		
-	opened = foregroundMask.clone();
+	//opened = foregroundMask.clone();
 	//findBigBlobs(opened);
 	//Erosion(fgMaskMOG2,eroded,1,MORPH_RECT);
-	medianBlur(foregroundMask, eroded,3);
-	findBigBlobs(eroded,110);
-	Dilation(eroded,opened,erosion_size,MORPH_ELLIPSE,morphIterations);
-	Erosion(opened,opened,erosion_size,MORPH_ELLIPSE,morphIterations);
+	medianBlur(foregroundMask, eroded,7);
+	Dilation(eroded,opened,erosion_size,MORPH_RECT,morphIterations);
+	Erosion(opened,opened,erosion_size,MORPH_RECT,morphIterations);
+	findBigBlobs(opened,110);
+	
 
 	calcBoundingBoxes(opened);
 
@@ -311,8 +324,8 @@ void Tracking::displayDebugWindows()
 	//declare Mat for Background reference
 	Mat bgImage = Mat(currentFrame.size().height,currentFrame.size().width,CV_64F, cvScalar(0.));
 	//## get Backgroundimage and show results
-	mog2BackgoundSubstractor->getBackgroundImage(bgImage);
-
+	//mog2BackgoundSubstractor->getBackgroundImage(bgImage);
+	bgsubstr.getBackgroundImage(bgImage);
 	//## ## debugDrawings
 	Mat debugImage = currentFrame.clone();
 	//	##BoundingBoxes
@@ -322,11 +335,27 @@ void Tracking::displayDebugWindows()
     namedWindow(windowName_debugDrawings, CV_WINDOW_KEEPRATIO);
     imshow(windowName_debugDrawings, debugImage);
 
-	/*namedWindow(windowName_erode,CV_WINDOW_KEEPRATIO);
-	imshow(windowName_erode,eroded);
+	string foldername = "debug6";
+	string imagename = "frame_";
+	string fileformat = ".jpg";
+	string folderCreateCommand = "mkdir " + foldername;
+	system(folderCreateCommand.c_str());
+
+	std::stringstream ss;
+
+	ss  << foldername << "/" << imagename << m_fileLoader->getSequencePosition() << fileformat;
+	string path = ss.str();
+	ss.str("");
+	imwrite(path,debugImage);
+
+	/*namedWindow("fgMask", CV_WINDOW_KEEPRATIO);
+	imshow("fgMask", foregroundMask);
 
 	namedWindow(windowName_background,CV_WINDOW_KEEPRATIO);
 	imshow(windowName_background,bgImage);*/
+
+	namedWindow(windowName_erode,CV_WINDOW_KEEPRATIO);
+	imshow(windowName_erode,eroded);*/
 
 }
 
