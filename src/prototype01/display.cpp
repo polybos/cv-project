@@ -10,7 +10,13 @@ Display::Display()
     ,m_fileLoader()
     ,m_tracking()
     ,m_classification()
+	,m_statistics(new Statistics())
 {
+}
+
+Display::~Display()
+{
+	delete m_statistics;
 }
 
 void Display::setFileLoader(FileLoader *fileLoader)
@@ -82,8 +88,12 @@ void Display::displayResult()
         {
             rectangle( img, tl, br, color, thickness );
             putText( img, label, tl-Point(-5,-30), 0, (double)thickness/5.5, color, thickness/2.25);
+
+			m_statistics->incrementBoundaryCount(1);
+			m_statistics->incrementDetectedObjectsCount(m_results.at(i).second);
         }
     }
+	m_statistics->incrementFrameCount();
 
     namedWindow( windowName_results, WINDOW_AUTOSIZE );
     imshow( windowName_results, img);
@@ -92,4 +102,9 @@ void Display::displayResult()
 void Display::displayTrackingOutput()
 {
     m_tracking->displayDebugWindows();
+}
+
+void Display::displayStatistics()
+{
+	m_statistics->summaryOutput();
 }

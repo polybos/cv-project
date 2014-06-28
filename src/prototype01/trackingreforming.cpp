@@ -25,13 +25,6 @@ void TrackingReforming::registerCurrentBoundaries( std::vector<cv::Rect>& bounda
         return;
     }
     int id = 0;
-    /*std::vector<cv::Rect>::iterator it;
-    for( it = boundaries.begin(); it != boundaries.end(); ++it )
-    {
-		m_calculatedClasses.insert(std::make_pair( id, cv::Vec3i(0,0,0) ) );
-        m_calculatedBoundaries.insert( std::make_pair( id++, *it ) );
-    }*/
-
     calculateNewBoundaries( boundaries );
 }
 
@@ -107,7 +100,6 @@ void TrackingReforming::getNewClasses(std::vector< std::pair<cv::Rect, TrafficCl
         }
 		++vectorIdx;
 	 }
-	 //std::cout << "-------------------" << std::endl;
 }
 
 // ---------------

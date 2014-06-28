@@ -77,5 +77,6 @@ void Statistics::summaryOutput()
     std::cout << " |  \\--------------- Bicycle: " << m_detectedObjectsCount[bicycle] << std::endl;
     std::cout << " |   \\------------------ Car: " << m_detectedObjectsCount[car] << std::endl;
     std::cout << " |    \\--------------- Human: " << m_detectedObjectsCount[human] << std::endl;
+	std::cout << " |     \\-------------- Undefined: " << m_detectedObjectsCount[undefined] << std::endl;
     std::cout << " |________________________________ " << std::endl;
 }

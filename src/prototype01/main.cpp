@@ -65,11 +65,12 @@ int main( int argc, char** argv )
         boundaries.clear();
         boundaries = m_trackingReforming->getNewBoundaries();
 
-        // Step4: Calculate classification of tracked objects
+        // Step4.1: Calculate classification of tracked objects
         m_classification->setBoundariesOfMovement( boundaries );
         m_classification->runClassifier();
         classificationResults = m_classification->getTrafficClasses();
 
+		// Step4.2 improve Classes based on last detections
 		m_trackingReforming->getNewClasses(classificationResults);
 
         // Step5: Display results
@@ -78,14 +79,14 @@ int main( int argc, char** argv )
         m_display->displayTrackingOutput();
 
         // Step6: Log some things for statistics (for better comparision when testing parameters ...)
-        m_statistics->incrementFrameCount();
-        m_statistics->incrementBoundaryCount( boundaries.size() );
-        for( std::vector< std::pair<cv::Rect, TrafficClass> >::iterator it = classificationResults.begin();
-             it != classificationResults.end();
-             ++it )
-        {
-            m_statistics->incrementDetectedObjectsCount( it->second );
-        }
+        //m_statistics->incrementFrameCount();
+        //m_statistics->incrementBoundaryCount( boundaries.size() );
+        //for( std::vector< std::pair<cv::Rect, TrafficClass> >::iterator it = classificationResults.begin();
+        //     it != classificationResults.end();
+        //     ++it )
+        //{
+        //    m_statistics->incrementDetectedObjectsCount( it->second );
+        //}
 
         // Step7: Wait for keyboard
         waitForKeyboard( keyboard, stepMode );
@@ -95,7 +96,8 @@ int main( int argc, char** argv )
     }
 
     // Print collected statistics ...
-    m_statistics->summaryOutput();
+    //m_statistics->summaryOutput();
+	m_display->displayStatistics();
 #endif //PARAMETERTEST
 
     // Some cleanup
@@ -109,6 +111,8 @@ int main( int argc, char** argv )
     delete m_tracking;
     delete m_fileLoader;
 
+
+	cv::waitKey(0);
     return 0;
 }
 
