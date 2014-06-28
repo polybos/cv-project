@@ -72,8 +72,6 @@
 
 
 
-
-
 % Some very useful LaTeX packages include:
 % (uncomment the ones you want to load)
 
@@ -122,6 +120,7 @@
 % http://www.ctan.org/tex-archive/macros/latex/contrib/cite/
 % The documentation is contained in the cite.sty file itself.
 
+\usepackage{hyperref}
 
 
 
@@ -413,13 +412,11 @@ Hier kommt die Einleitung ...
 \subsection{Ziel des Projektes}
 Subsection text here.
 
-
 \subsection{Überblick über das Verfahren}
 Subsubsection text here.
 
-
 \subsection{Verwendete Bibliotheken}
-Das Projekt wurde mittels C++ umgesetzt. Wir verwenden die OpenCV Bibliothek in Version 2.4.8 und 2.4.9.
+Das Projekt wurde in der Programmiersprache C++, nach Standard ISO/IEC 14882:2011 aka C++11 umgesetzt. Abgesehen von der STL wurde als einzige Bibliothek OpenCV \cite{opencv} in Version 2.4.8/2.4.9 eingesetzt. Um plattformunabhängig entwickeln zu können wurde CMake \cite{cmake} als Meta-Buildsystem genutzt. Die Projektverwaltung erfolgte mittels Git \cite{git} auf GitHub \cite{github}.
 
 
 % An example of a floating figure using the graphicx package.
@@ -506,41 +503,52 @@ Das Projekt wurde mittels C++ umgesetzt. Wir verwenden die OpenCV Bibliothek in 
 % command of the stfloats package.
 
 
+
 \section{Verfahren}
 
 \subsection{Segmentierung und Objektverfolgung}
 
 
+
 \subsection{Klassifikation}
 
+\subsubsection{Ursprüngliche Idee}
+
+Zu Anfang der Projektarbeit war uns der Gedanke gekommen, dass es recht elegant wäre auf komplizierte, zu trainierende Klassifikatoren zu verzichten und stattdessen lieber einen einfacheren und nachvollziehbaren Ansatz zu verfolgen: Klassifikation anhand von Seitenverhältnis und markanten Linien. Hintergrundgedanke war, dass die Kamera in den meisten Fällen einen kleinen Horizontalwinkel haben wird, so dass der Horizont - falls sichtbar - eine nahezu horizontale Linie auf dem Bild abbilden würde. Basierend auf dieser Annahme wären Menschen die laufen höher als breit. Autos dagegen breiter als hoch. Fahrradfahrer wären ähnlich der Autos breiter als hoch. Hier hätten die Linienkomponenten helfen sollen. Eine weitere Idee war mittels Template Matching die Reifen zu extrahieren und anhand von deren Größenverhältnis zum gesamten Objekt zwischen Fahrrad und Auto zu unterscheiden.
+Da wir uns mit der Linienkomponente nicht sehr sicher waren, die Detektion von sich auf die Kamera zu- und wegbewegenden Fahrrädern und Autos nicht in unser Konzept gepasst haben und wir nicht so viel Zeit zum herumexperimentieren hatten, entschieden wir uns für einen \textit{klassischen} Ansatz der mit gewisser Sicherheit zu einem soliden Ergebnis führen sollte.
 
 \subsubsection{Haar-Feature-Cascade-Classifier}
 
-Die Klassifikation ist über einen Haar-Feature-Cascade-Classifier implementiert.
+Die Klassifikation ist schlussendlich über einen Haar-Feature-Cascade-Classifier implementiert.
 Dafür wird für jede Klasse eine eigens trainierte Klassifikationsdatei im XML-Format benötigt. Da wir die Klassen \textit{Auto}, \textit{Mensch} und \textit{Fahrrad} unterscheiden wollen benötigen wir drei Klassifikationsdateien. Diese XML-Dateien werden bei Programmstart geladen und teilen dem Klassifikator die Parameter mit, auf die er reagieren soll. Anschließend können wir den Klassifikator auf eine beliebige Region-Of-Interest (ROI) anwenden. Als Ergebnis erhalten wir eine Liste von Bereichen innerhalb der ROI mit erkannten Objekten. Somit bekommen wir unter anderem ein binäres Ergebnis - \textit{gefunden} wenn die Liste mindestens einen Eintrag hat oder \textit{nicht gefunden} wenn die Liste leer ist. Der Vorteil an dieser Methode liegt darin, dass wir somit mehrere Objekte innerhalb einer gegebenen ROI erkennen können. Wenn wir uns allerdings sicher sind, dass die gegebene ROI nur ein Objekt enthalten kann, fällen wir das Urteil anhand der Schwierigkeit der Detektion der Klasse und Anzahl der gefundenen Bereiche. Somit entscheiden wir uns für die Klasse Fahrrad, sobald der Klassifikator mindestens ein Fahrrad gefunden hat, da dies für unseren Klassifikator die am schwierigsten zu detektierende Klasse ist. Dass auf den meisten Fahrrädern Menschen sitzen ist ein weiterer Grund die Klassifikation nach Menschen erst durchzuführen, wenn kein Fahrrad erkannt wurde.
 Wenn kein Fahhrad in der ROI gefunden wurde, wird anschließend nach Menschen gesucht und zuletzt nach Autos.
 
 \subsubsection{Training}
+
 Da das Erzeugen einer Klassifikationsdatei je nach Schwierigkeit und gewünschter Genauigkeit mehrere Stunden bis Tage dauern kann, wurde nach bereits verfügbaren, trainierten Klassfikationsdateien gesucht um den Aufwand in einem vertretbaren Rahmen zu halten. Fündig wurden wir allerdings nur in den OpenCV-Beispielen mit dem \textit{haarcascade\_mcs\_upperbody.xml} als robusten Klassifikator für Menschen. 
 
 Die Klassifikationsdateien für Fahrräder und Autos mussten wir selbst erstellen.
-Dazu haben wir uns im wesentlichen an eine Anleitung (\url{http://note.sonots.com/SciSoftware/haartraining.html}) von \textit{Naotoshi Seo} gehalten. In der Anleitung wurden die folgenden Schritte beschrieben:
+Dazu haben wir uns im wesentlichen an eine Anleitung\cite{Seo:Haartraining} von \textit{Naotoshi Seo} gehalten. In dieser wurden die folgenden Schritte beschrieben:
 \begin{itemize}
 	\item Vorbereitung der Daten
 	\item Samples erzeugen
 	\item Training
 \end{itemize}
-Zusätzlich hat der Autor mit \textit{mergevec.cpp} und \textit{createtrainsamples.pl} zwei kleine Programme veröffentlicht, mit denen man sehr schnell Datensätze für Positiv- und Negativbilder erzeugen kann. Die so erzeugten Datensätze werden wiederum an das Programm opencv\_haartraining gegeben, zusammen mit Parametern die im wesentlichen die Qualität und Laufzeit des Trainings bestimmen.
-Für das Training der Klassifikationsdatei für Autos haben wir ausschließlich Positivbilder aus den gegebenen Testdaten erzeugt. Für die Fahrräder haben wir zusätzlich zu den gegebenen Testdaten noch \url{http://www.vision.caltech.edu/Image_Datasets/Caltech256/} als Quelle genutzt, indem wir alle Bilder aus den Verzeichnissen \textit{146.mountain-bike} und \textit{224.touring-bike} als zusätzliche Positivbilder genutzt haben. In beiden Fällen wurde der Datensatz der Negativbilder aus 	einer größeren Bildersammlung sowie den Positivbildern der anderen Klassen erstellt.
+Zusätzlich hat der Autor mit \textit{mergevec.cpp} und \textit{createtrainsamples.pl} zwei kleine Programme veröffentlicht, mit denen man sehr schnell Datensätze für Positiv- und Negativbilder erzeugen kann. Die so erzeugten Datensätze werden wiederum an das Programm \textit{opencv\_haartraining} gegeben, zusammen mit Parametern die im wesentlichen die Qualität und Laufzeit des Trainings bestimmen.
+Für das Training der Klassifikationsdatei für Autos haben wir ausschließlich Positivbilder aus den gegebenen Testdaten erzeugt. Für die Fahrräder haben wir zusätzlich zu den gegebenen Testdaten noch Fahrradbilder aus einem frei verfügbaren Datensatz\cite{Caltech256} als zusätzliche Positivbilder genutzt. In beiden Fällen wurde der Datensatz der Negativbilder aus einer größeren Bildersammlung sowie den Positivbildern der jeweils anderen Klassen erstellt.
+
+
 
 \section{Evaluierung}
-Die Evaluierung folgt ...
+
+Die Evaluierung zeigt ein durchwachsenes Bild.
+Unser Ansatz hat auf den Datensätzen 1 bis 7 und 13 und 14 gut funktioniert. Auf den Datensätzen 8 bis 12 dagegeben gab es Probleme. Generell hat sich gezeigt, dass die Segmentierung meist gut funktioniert, die Klassifkation dagegen nicht robust ist. Gerade wenn sich die Art des Datensatzes stark von den Arten der Trainingsdatensätze ändert, fallen starke Mängel in der Klassifikation auf. Bei den Testdatensätzen 8 bis 12 zeigt sich, dass es Kamerapositionen gibt, mit denen nicht trainiert wurde und somit der Klassifikator wenig Chancen hat, seine Arbeit erfolgreich zu erledigen.
+Andererseits zeigte sich, dass unser Verfahren sehr schnell ist und wir je nach Datensatz ein bis mehrere Bilder pro Sekunde mit der kompletten Pipeline an Berechnungen erhalten.
 
 
 \section{Schluss}
 
 Wir haben es geschafft mit einfachen Mitteln einen verhältnismäßig schnellen Algorithmus mit Hilfe der OpenCV-Bibliothek zu erstellen. Dieser arbeitet auf günstigen Datensätzen zuverlässig mit einer guten Detektionsrate. Bei schwierigeren Datensätzen zeigt unser Ansatz allerdings Schwächen.
-
 
 \subsection{Ausblick}
 Mit besser trainierten Daten und einem Austausch der Ergebnisse zwischen Klassifikator und Segmentierungsroutine wären deutlich bessere Ergebnisse erzielbar.
@@ -583,12 +591,20 @@ Zusätzlich sollte man - wie bereits erwähnt - die Ergebnisse von Klassifikator
 % <OR> manually copy in the resultant .bbl file
 % set second argument of \begin to the number of references
 % (used to reserve space for the reference number labels box)
+\renewcommand*{\refname}{Quellen}
 \begin{thebibliography}{1}
-
-\bibitem{IEEEhowto:kopka}
-H.~Kopka and P.~W. Daly, \emph{A Guide to \LaTeX}, 3rd~ed.\hskip 1em plus
-  0.5em minus 0.4em\relax Harlow, England: Addison-Wesley, 1999.
-
+	\bibitem{opencv}
+		\url{http://opencv.org/}
+	\bibitem{cmake}
+		\url{http://cmake.org/}
+	\bibitem{git}
+		\url{http://git-scm.com/}
+	\bibitem{github}
+		\url{https://github.com/polybos/cv-project}
+	\bibitem{Seo:Haartraining}
+		\url{http://note.sonots.com/SciSoftware/haartraining.html}
+	\bibitem{Caltech256}
+		\url{http://www.vision.caltech.edu/Image_Datasets/Caltech256}
 \end{thebibliography}
 
 
