@@ -320,6 +320,8 @@
 % (Unless specifically asked to do so by the journal or conference you plan
 % to submit to, of course. )
 
+\usepackage{soul}
+
 
 % correct bad hyphenation here
 \hyphenation{op-tical net-works semi-conduc-tor}
@@ -405,15 +407,15 @@ Magdeburg}}
 \section{Einleitung}
 % no \IEEEPARstart
 
-Hier kommt die Einleitung ...
+%Hier kommt die Einleitung ...
  
-\hfill  28. Juni 2014
+%\hfill  28. Juni 2014
 
 \subsection{Ziel des Projektes}
-Subsection text here.
+Im Rahmen des Projektes soll eine Bewegungssegmentierung implementiert werden, welche auf Verkehrsszenen mit starrer Kamera angewandt wird. Zusätzlich sollen die segmentierten Objekte in eine der drei Klassen \textit{Fußgänger}, \textit{Radfahrer} und \textit{Auto} eingeordnet werden. Herausforderungen dabei sind (Teil-)Verdeckungen, variable Beleuchtung und Fehler des Aufnahmesystems (Lensflares).
 
 \subsection{Überblick über das Verfahren}
-Subsubsection text here.
+Unser Ansatz Besteht im Wesentlichen aus drei Schritten: Segmentierung, Klassifikation, Nachverarbeitung. Die Segmentierung erstellt mittels Backgroundsubstraction eine Vordergrundmaske, die durch eine Connected Component Analyse in einzelne Objekte gegliedert wird. Diese Objekte werden an einen Haar-Cascade-Klassifikator weitergereicht, der zuvor auf die drei o.g. Klassen trainiert wurde. Zum Schluss führen wir in einem Nachverarbeitungsschritt Objekte in einer kleinen Nachbarschaft zusammen, um Objektzersplitterung durch Fehlsegmentierung oder Teilverdeckung zu vermeiden.
 
 \subsection{Verwendete Bibliotheken}
 Das Projekt wurde in der Programmiersprache C++, nach Standard ISO/IEC 14882:2011 aka C++11 umgesetzt. Abgesehen von der STL wurde als einzige Bibliothek OpenCV \cite{opencv} in Version 2.4.8/2.4.9 eingesetzt. Um plattformunabhängig entwickeln zu können wurde CMake \cite{cmake} als Meta-Buildsystem genutzt. Die Projektverwaltung erfolgte mittels Git \cite{git} auf GitHub \cite{github}.
@@ -506,9 +508,17 @@ Das Projekt wurde in der Programmiersprache C++, nach Standard ISO/IEC 14882:201
 
 \section{Verfahren}
 
-\subsection{Segmentierung und Objektverfolgung}
-
-
+\subsection{Segmentierung }
+Für die Bewegungssegmentierung nutzen wir den von OpenCV bereitgestellten \textit{BackgroundSubstractorMOG2}, der das Gaussian Mixture Model nach dem Verfahren in \ul{Z.Zivkovic, Improved adaptive Gausian mixture model for background subtraction} benutzt. Dabei verzichten wir jedoch auf die eingebaute Schattensegmentierung, da diese nicht zuverlässig genug für uns ist. Durch empirische Untersuchung haben sich folgende Parametereinstellungen als zufriedenstellend erwiesen:
+\begin{itemize}
+	\item nmixtures = 10
+	\item backgroundRatio = 0.9
+	\item history = 45
+	\item varThresholdGen = 55
+	\item varThreshold = 4
+\end{itemize}
+Um das Rauschen in der erstellten Maske zu unterdrücken filtern wir diese durch einen Medianfilter mit geringer Kernelgröße. Es kann passieren, dass nur Teile von einem Objekt segmentiert werden, die jedoch sehr nahe an einander liegen. Diese verbinden wir durch ein morphologisches closing.
+Damit wir nun aus der Maske einzelne Objekte erhalten, führen wir eine Connected Componend Analyse mittels der OpenCV-Funktion \textit{findContours} aus. Objekte die eine bestimmte Mindestgröße unterschrieten werden dabei entfernt. An den Klassifikator wird dann eine bounding Box für jede erkannte Kontur weitergereicht.
 
 \subsection{Klassifikation}
 
@@ -537,7 +547,13 @@ Dazu haben wir uns im wesentlichen an eine Anleitung\cite{Seo:Haartraining} von 
 Zusätzlich hat der Autor mit \textit{mergevec.cpp} und \textit{createtrainsamples.pl} zwei kleine Programme veröffentlicht, mit denen man sehr schnell Datensätze für Positiv- und Negativbilder erzeugen kann. Die so erzeugten Datensätze werden wiederum an das Programm \textit{opencv\_haartraining} gegeben, zusammen mit Parametern die im wesentlichen die Qualität und Laufzeit des Trainings bestimmen.
 Für das Training der Klassifikationsdatei für Autos haben wir ausschließlich Positivbilder aus den gegebenen Testdaten erzeugt. Für die Fahrräder haben wir zusätzlich zu den gegebenen Testdaten noch Fahrradbilder aus einem frei verfügbaren Datensatz\cite{Caltech256} als zusätzliche Positivbilder genutzt. In beiden Fällen wurde der Datensatz der Negativbilder aus einer größeren Bildersammlung sowie den Positivbildern der jeweils anderen Klassen erstellt.
 
+\subsection{Nachverarbeitung}
 
+\subsection{Verworfene Bestandteile}
+
+\subsubsection{Optischer Fluss}
+
+\subsubsection{Tracking}
 
 \section{Evaluierung}
 
