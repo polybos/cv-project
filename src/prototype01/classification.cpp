@@ -21,8 +21,8 @@ Classification::Classification()
     ,m_cc_bicycle( cv::CascadeClassifier( ) )
     ,m_currentImage()
     ,m_scaleFactor( 1.1 )
-    ,m_minNeighbours( 1 )
-    ,m_minSize( 40 )
+    ,m_minNeighbours( 2 )
+    ,m_minSize( 20 )
 
 {
     std::cout << "m_cascadePathCar:" << m_cascadePathCar << std::endl;
@@ -59,7 +59,7 @@ TrafficClass Classification::getTrafficClassOfBoundary( cv::Rect boundary )
     cv::Mat m_currentImage = m_fileLoader->getCurrentImage();
 
     // calculate position and size for bigger border
-    int padding = 50;
+    int padding = boundary.height * 0.3;
     int x = ( boundary.x < padding ) ? 0 : boundary.x - padding;
     int y = ( boundary.y < padding ) ? 0 : boundary.y - padding;
     int width = 0;
@@ -94,21 +94,30 @@ TrafficClass Classification::getTrafficClassOfBoundary( cv::Rect boundary )
     // todo! find a way to detect multiple objects in one setting (actually returns only first detected object-class)
     std::vector< cv::Rect> detected_bicycles;
     m_cc_bicycle.detectMultiScale( gray, detected_bicycles, m_scaleFactor, m_minNeighbours, 0|CV_HAAR_SCALE_IMAGE, cv::Size( m_minSize, m_minSize ) );
-    if( detected_bicycles.size() >= 1 )
+/*   if( detected_bicycles.size() >= 1 )
     {
 #ifdef DEBUG
         std::cout << "Bicycle" << std::endl;
 #endif // DEBUG
         return bicycle;
-    }
+    }*/
 
     std::vector< cv::Rect > detected_human;
     m_cc_human.detectMultiScale( gray, detected_human, m_scaleFactor, m_minNeighbours, 0|CV_HAAR_SCALE_IMAGE, cv::Size( m_minSize, m_minSize ) );
-    if( detected_human.size() >= 1 )
+/*    if( detected_human.size() >= 1 )
     {
 #ifdef DEBUG
         std::cout << "Human" << std::endl;
 #endif // DEBUG
+        return human;
+    }*/
+    // assumption: one human and one bicycle = human on a bicycle
+    if( detected_bicycles.size() >= 1 && detected_human.size() <= detected_bicycles.size() )
+    {
+        return bicycle;
+    }
+    if( detected_human.size() >= 1 )
+    {
         return human;
     }
 
