@@ -50,6 +50,7 @@ void Display::displayResult()
 
         int thickness = 5;
         string label;
+        bool show = true;
 
         switch ( m_results.at(i).second )
         {
@@ -63,14 +64,25 @@ void Display::displayResult()
             label = "bicycle";
             break;
         default:
-            label = "not detected";
-            thickness = 3;
-            color = cvScalar( 50, 50, 50, 255 );
+            // do not show small areas
+            if( m_results.at(i).first.area() < img.size().area() * 0.005  )
+            {
+                show = false;
+            }
+            else
+            {
+                label = "not detected";
+                thickness = 3;
+                color = cvScalar( 50, 50, 50, 255 );
+            }
             break;
         }
 
-        rectangle( img, tl, br, color, thickness );
-        putText( img, label, tl-Point(-5,5), 0, (double)thickness/3.0, color, thickness/1.25);
+        if( show )
+        {
+            rectangle( img, tl, br, color, thickness );
+            putText( img, label, tl-Point(-5,-30), 0, (double)thickness/5.5, color, thickness/2.25);
+        }
     }
 
     namedWindow( windowName_results, WINDOW_AUTOSIZE );
