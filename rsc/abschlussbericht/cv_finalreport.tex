@@ -526,7 +526,7 @@ Das Projekt wurde in der Programmiersprache C++, nach Standard ISO/IEC 14882:201
 
 \subsubsection{Backgroundsubstraction}
 
-Für die Bewegungssegmentierung nutzen wir den von OpenCV bereitgestellten \textit{BackgroundSubstractorMOG2}, der das Gaussian Mixture Model (GMM) nach dem Verfahren von Z. Zivkovic \cite{zivkovic} benutzt. Dabei verzichten wir jedoch auf die eingebaute Schattensegmentierung, da diese nicht zuverlässig genug für uns ist. Der Backgroundsubstractor erstellt aus den letzten \textit{k} Frames mit Hilfe von GMM ein Hintergrundbild. Zwischen diesem und dem aktuellen Frame wird ein Differenzbild erstellt. In diesem Differenzbild sind Bereiche, in denen sich nichts bewegt hat dunkel und Bereiche in denen eine Bewegung stattgefunden hat hell. Durch eine Schwellenwertoperation erhält man so eine Maske, welche die bewegten Objekte segmentiert. Das Ergebnis ist in Abbildung \ref{fig:foreground} zu sehen.
+Für die Bewegungssegmentierung nutzen wir den von OpenCV bereitgestellten \textit{BackgroundSubstractorMOG2}, der das Gaussian Mixture Model (GMM) nach dem Verfahren von Z. Zivkovic \cite{zivkovic} benutzt. Dabei verzichten wir jedoch auf die eingebaute Schattensegmentierung, da diese nicht zuverlässig genug für uns ist. Der Backgroundsubstractor erstellt aus den letzten \textit{k} Frames mit HIlfe von GMM ein Hintergrundbild. Zwischen diesem und dem aktuellen Frame wird ein Differenzbild erstellt. In diesem Differenzbild sind Bereiche in denen sich nichts bewegt hat dunkel und Bereiche in denen eine Bewegung stattgefunden hat, sind hell. Durch eine Schwellenwertoperation erhält man so eine Maske, welche die bewegten Objekte segmentiert. Das Ergebnis ist in Abbildung \ref{fig:foregroundmask} zu sehen.
 Durch empirische Untersuchung haben sich folgende Parametereinstellungen als zufriedenstellend erwiesen:
 \begin{itemize}
 	\item nmixtures = 10
@@ -539,33 +539,18 @@ Um das Rauschen in der erstellten Maske zu unterdrücken filtern wir diese durch
 Damit wir nun aus der Maske einzelne Objekte erhalten, führen wir eine Connected Componend Analyse mittels der OpenCV-Funktion \textit{findContours} aus. Objekte die eine bestimmte Mindestgröße unterschreiten werden dabei entfernt, da diese als irrelevant zu erachten sind.
 
 
-%\begin{minipage}[hbt]{5cm}
-%\centering
-%\includegraphics[width=5cm]{trainds01_foregroundmask}
-%%\caption{Bild1}
-%\label{Bild1}
-%\end{minipage}
-%\hfill
-%\begin{minipage}[hbt]{5cm}
-%\centering
-%\includegraphics[width=5cm]{trainds01_original}
-%%\caption{Bild2}
-%\label{Bild2}
-%\end{minipage}
-
-
 \begin{figure}
 	\centering
-	\begin{subfigure}[t]{0.23\textwidth}
-		\includegraphics[width=\textwidth]{trainds01_original}
-		\subcaption{Originalbild}
-		\label{fig:sub2}
-	\end{subfigure}
 	\begin{subfigure}[t]{0.23\textwidth}
 		\includegraphics[width=\textwidth]{trainds01_foregroundmask}
 		\subcaption{Vordergrundmaske, graue Bereiche wurden als Schatten erkannt}
 		\label{fig:sub1}
 	\end{subfigure}	
+	\begin{subfigure}[t]{0.23\textwidth}
+		\includegraphics[width=\textwidth]{trainds01_original}
+		\subcaption{Originalbild}
+		\label{fig:sub2}
+	\end{subfigure}
 	\caption{Ergebnis der Backgroundsubstraction}
 	\label{fig:test}
 \end{figure}
