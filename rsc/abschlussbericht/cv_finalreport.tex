@@ -320,12 +320,14 @@
 % (Unless specifically asked to do so by the journal or conference you plan
 % to submit to, of course. )
 
-\usepackage{subfigure}
-\usepackage{hyperref}
+%\usepackage{subfigure}
+%\usepackage{hyperref}
 %%% Doc: ftp://tug.ctan.org/pub/tex-archive/.....ntrib/oberdiek/hypcap.pdf
 % Links auf Gleitumgebungen springen nicht zur Beschriftung,
 % sondern zum Anfang der Gleitumgebung
-   \usepackage[figure]{hypcap} 
+   %\usepackage[figure]{hypcap} 
+   
+\usepackage{subcaption}
 
 
 % correct bad hyphenation here
@@ -415,7 +417,7 @@ Magdeburg}}
 Im Rahmen des Projektes soll eine Bewegungssegmentierung implementiert werden, welche auf Verkehrsszenen mit starrer Kamera angewandt wird. Zusätzlich sollen die segmentierten Objekte in eine der drei Klassen \textit{Fußgänger}, \textit{Radfahrer} und \textit{Auto} eingeordnet werden. Herausforderungen dabei sind (Teil-)Verdeckungen, variable Beleuchtung und Fehler des Aufnahmesystems (Lensflares).
 
 \subsection{Überblick über das Verfahren}
-Unser Ansatz besteht im Wesentlichen aus den beiden Schritten Segmentierung und Klassifikation, denen jeweils eine Nachverarbeitung folgt. Die Segmentierung erstellt mittels Backgroundsubstraction eine Vordergrundmaske, die durch eine Connected Component Analyse in einzelne Objekte gegliedert wird. In einem Nachverarbeitungsschritt führen wir Objekte in einer kleinen Nachbarschaft zusammen, um Objektzersplitterung durch Fehlsegmentierung oder Teilverdeckung zu vermeiden. Dabei bleiben die erkannten Konturen erhalten, nur die bounding Boxes werden vereinigt. Die so gruppierten Objekte werden an einen Haar-Cascade-Klassifikator weitergereicht, der zuvor auf die drei o.g. Klassen trainiert wurde. Zum Schluss werden die Klassifikationsergebnisse in einem weiteren Nachverarbeitungsschritt mit vorherigen Klassifikationen für das selbe Objekt verglichen und als endgültiges Ergebnis wird die am häufigsten zugewiesene Klasse gewählt.
+Unser Ansatz besteht im Wesentlichen aus den beiden Schritten Segmentierung und Klassifikation, denen jeweils eine Nachverarbeitung folgt. Die Segmentierung erstellt mittels Backgroundsubstraction eine Vordergrundmaske, die durch eine Connected Component Analyse in einzelne Objekte gegliedert wird. In einem Nachverarbeitungsschritt führen wir Objekte in einer kleinen Nachbarschaft zusammen, um Objektzersplitterung durch Fehlsegmentierung oder Teilverdeckung zu vermeiden. Die so gruppierten Objekte werden an einen Haar-Cascade-Klassifikator weitergereicht, der zuvor auf die drei o.g. Klassen trainiert wurde. Zum Schluss werden die Klassifikationsergebnisse in einem weiteren Nachverarbeitungsschritt mit vorherigen Klassifikationen für das selbe Objekt verglichen und als endgültiges Ergebnis wird die am häufigsten zugewiesene Klasse gewählt.
 
 \subsection{Verwendete Bibliotheken}
 Das Projekt wurde in der Programmiersprache C++, nach Standard ISO/IEC 14882:2011 aka C++11 umgesetzt. Abgesehen von der STL wurde als einzige Bibliothek OpenCV \cite{opencv} in Version 2.4.8/2.4.9 eingesetzt. Um plattformunabhängig entwickeln zu können wurde CMake \cite{cmake} als Meta-Buildsystem genutzt. Die Projektverwaltung erfolgte mittels Git \cite{git} auf GitHub \cite{github}.
@@ -513,7 +515,7 @@ Das Projekt wurde in der Programmiersprache C++, nach Standard ISO/IEC 14882:201
 \end{figure}
 
 \subsubsection{Backgroundsubstraction}
-Für die Bewegungssegmentierung nutzen wir den von OpenCV bereitgestellten \textit{BackgroundSubstractorMOG2}, der das Gaussian Mixture Model (GMM) nach dem Verfahren von Z. Zivkovic \cite{zivkovic} benutzt. Dabei verzichten wir jedoch auf die eingebaute Schattensegmentierung, da diese nicht zuverlässig genug für uns ist. Der Backgroundsubstractor erstellt aus den letzten \textit{k} Frames mit HIlfe von GMM ein Hintergrundbild. Zwischen diesem und dem aktuellen Frame wird ein Differenzbild erstellt. In diesem Differenzbild sind Bereiche, in denen sich nichts bewegt hat dunkel und Bereiche in denen eine Bewegung stattgefunden hat sind hell. Durch eine Schwellenwertoperation erhält man so eine Maske, welche die bewegten Objekte segmentiert. Das Ergebnis ist in Abbildung \ref{fig:foreground} zu sehen.
+Für die Bewegungssegmentierung nutzen wir den von OpenCV bereitgestellten \textit{BackgroundSubstractorMOG2}, der das Gaussian Mixture Model (GMM) nach dem Verfahren von Z. Zivkovic \cite{zivkovic} benutzt. Dabei verzichten wir jedoch auf die eingebaute Schattensegmentierung, da diese nicht zuverlässig genug für uns ist. Der Backgroundsubstractor erstellt aus den letzten \textit{k} Frames mit HIlfe von GMM ein Hintergrundbild. Zwischen diesem und dem aktuellen Frame wird ein Differenzbild erstellt. In diesem Differenzbild sind Bereiche in denen sich nichts bewegt hat dunkel und Bereiche in denen eine Bewegung stattgefunden hat, sind hell. Durch eine Schwellenwertoperation erhält man so eine Maske, welche die bewegten Objekte segmentiert. Das Ergebnis ist in Abbildung \ref{fig:foreground} zu sehen.
 Durch empirische Untersuchung haben sich folgende Parametereinstellungen als zufriedenstellend erwiesen:
 \begin{itemize}
 	\item nmixtures = 10
@@ -525,15 +527,42 @@ Durch empirische Untersuchung haben sich folgende Parametereinstellungen als zuf
 Um das Rauschen in der erstellten Maske zu unterdrücken filtern wir diese durch einen Medianfilter mit geringer Kernelgröße. Bei der Backgroundsubstraction kann es vorkommen, dass nur Teile von einem Objekt segmentiert werden, die jedoch sehr nahe an einander liegen. Diese verbinden wir durch ein morphologisches closing.
 Damit wir nun aus der Maske einzelne Objekte erhalten, führen wir eine Connected Componend Analyse mittels der OpenCV-Funktion \textit{findContours} aus. Objekte die eine bestimmte Mindestgröße unterschreiten werden dabei entfernt, da diese als irrelevant zu erachten sind.
 
+
+%\begin{minipage}[hbt]{5cm}
+%\centering
+%\includegraphics[width=5cm]{trainds01_foregroundmask}
+%%\caption{Bild1}
+%\label{Bild1}
+%\end{minipage}
+%\hfill
+%\begin{minipage}[hbt]{5cm}
+%\centering
+%\includegraphics[width=5cm]{trainds01_original}
+%%\caption{Bild2}
+%\label{Bild2}
+%\end{minipage}
+
+
 \begin{figure}
-\label{fig:foreground}
-	\subfigure[Vordegrundmaske, graue Bereiche wurden als Schatten erkannt]{\includegraphics[width=0.2\textwidth]{trainds01_foregroundmask}}
-	\subfigure[Originalbild]{\includegraphics[width=0.2\textwidth]{trainds01_original}}
-	\caption{Ergebnis der Backfroundsubstraction}
+\centering
+\begin{subfigure}{.2\textwidth}
+\centering
+  \includegraphics[width=1\linewidth]{trainds01_foregroundmask}
+  \caption{A subfigure}
+  \label{fig:sub1}
+\end{subfigure}%
+\begin{subfigure}{.2\textwidth}
+\centering
+  \includegraphics[width=1\linewidth]{trainds01_original}
+  \caption{A subfigure}
+  \label{fig:sub2}
+\end{subfigure}
+\caption{A figure with two subfigures}
+\label{fig:test}
 \end{figure}
 
 \subsubsection{Nachverarbeitung}
-Um das Problem von Teilverdeckungen zu beheben, haben wir einen einfachen Nachverarbeitungsschritt entwickelt, der ähnliche Aufgaben, wie ein aufwändigeres Tracken übernehmen soll. Dazu gehen wir davon aus, dass wir im vorherigen Frame ein Objekt \textit{A} mit der bounding Box \textit{b} detektiert haben. Im aktuellen Frame wird dann in einem Bereich \textit{b'=s*b} nach neu detektierten Objekten gesucht. Dabei ist \textit{s} ein non-uniformer Skalierungsfaktor, der in der Horizontalen größer ist, als in der Vertikalen, da wir davon ausgehen, dass sich die Objekte schneller in horizontaler, als in vertikaler Richtung bewegen. Liegt die bounding Box von einem oder mehreren neu detektierten Objekten komplett innerhalb von \textit{b'}, dann werden diese einem Gesamtobjekt zugeordnet, wie in Abbildung \ref{fig:trainds01_nachverarbeitung} zu sehen. Dabei kann es passieren, dass sich gruppierte Objekte über das gesamte Bild ausdehnen, daher wird eine Gruppierung aufglöst, sobald die gruppierten Objekte sich zu weit von einander entfernen. Die so entstandenen Objekte werden im Folgenden an den Klassifikator weiter gereicht.
+Um das Problem von Teilverdeckungen zu beheben, haben wir einen einfachen Nachverarbeitungsschritt entwickelt, der ähnliche Aufgaben, wie ein aufwändigeres Tracken übernehmen soll. Dazu gehen wir davon aus, dass wir im vorherigen Frame ein Objekt \textit{A} mit der bounding Box \textit{b} detektiert haben. Im aktuellen Frame wird dann in einem Bereich \textit{b'=s*b} nach neu detektierten Objekten gesucht. Dabei ist \textit{s} ein non-uniformer Skalierungsfaktor, der in der Horizontalen größer ist, als in der Vertikalen, da wir davon ausgehen, dass sich die Objekte schneller in horizontaler, als in vertikaler Richtung bewegen. Liegt die bounding Box von einem oder mehreren neu detektierten Objekten komplett innerhalb von \textit{b'}, dann werden diese einem Gesamtobjekt zugeordnet, wie in Abbildung \ref{fig:trainds01_nachverarbeitung} zu sehen. Dabei bleiben die erkannten Konturen erhalten, nur die bounding Boxes werden vereinigt. Durch diese Neugruppierung kann es passieren, dass sich gruppierte Objekte über das gesamte Bild ausdehnen, daher wird eine Gruppierung aufglöst, sobald die gruppierten Objekte sich zu weit von einander entfernen. Die so entstandenen Objekte werden im Folgenden an den Klassifikator weiter gereicht.
 
 \begin{figure}
 \centering
@@ -609,7 +638,7 @@ Mit besser trainierten Daten und einem Austausch der Ergebnisse zwischen Klassif
 Für perfekte Ergebnisse müssten allerdings die Algorithmen umgestellt werden. Je nach einsetzbarem Rechenaufwand pro Bild könnte man robustere Verfahren nutzen, sowohl für die Segmentierung und Objektverfolgung, als auch die Klassifikation. So wäre beispielsweise eine Median-basierte Hintergrundbilderzeugung ein Grundstein für eine robustere Segmentierung, würde allerdings gleichzeitig einen enorm höheren Rechenaufwand benötigen.
 Außerdem könnte man die Segmentierten Konturen tracken um so plötzliche Veränderungen der Kontur einzuschränken.
 Bei der Klassifikation müsste man für unterschiedliche Klassen unterschiedliche Verfahren nutzen. Für Autos könnte man das aktuelle Verfahren, d.h. den Haar-Feature-Cascade-Classifier beibehalten. Für Menschen und Fahrräder könnte man beispielsweise auf einen HOG-Cascade-Classifier wechseln um bessere Ergebnisse zu erzielen.
-Zusätzlich sollte man - wie bereits erwähnt - die Ergebnisse von Klassifikator und Segmentierungsroutine ineinander einfließen lassen. So könnte man zu Beginn einer Sequenz die Klassifikatoren auf dem gesamten Bild nach potentiellen Objekten suchen lassen. Anschließen merkt man sich diese Region-Of-Interests für potentielle Bewegungen vor. Weiterhin könnte man bei getrackten Objekten die Klassifikation robuster gestalten, indem man sich für ein Objekt die detektierte Klasse merkt und einen sprunghaften Wechsel der Klasse von getrackten Objekten verhindert.
+Zusätzlich sollte man - wie bereits erwähnt - die Ergebnisse von Klassifikator und Segmentierungsroutine ineinander einfließen lassen. So könnte man zu Beginn einer Sequenz die Klassifikatoren auf dem gesamten Bild nach potentiellen Objekten suchen lassen. Anschließend merkt man sich diese Region-Of-Interests für potentielle Bewegungen vor. Weiterhin könnte man bei getrackten Objekten die Klassifikation robuster gestalten, indem man sich für ein Objekt die detektierte Klasse merkt und einen sprunghaften Wechsel der Klasse von getrackten Objekten verhindert.
 
 
 \begin{figure}
