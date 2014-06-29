@@ -320,7 +320,12 @@
 % (Unless specifically asked to do so by the journal or conference you plan
 % to submit to, of course. )
 
-%\usepackage{soul}
+\usepackage{subfigure}
+\usepackage{hyperref}
+%%% Doc: ftp://tug.ctan.org/pub/tex-archive/.....ntrib/oberdiek/hypcap.pdf
+% Links auf Gleitumgebungen springen nicht zur Beschriftung,
+% sondern zum Anfang der Gleitumgebung
+   \usepackage[figure]{hypcap} 
 
 
 % correct bad hyphenation here
@@ -410,7 +415,7 @@ Magdeburg}}
 Im Rahmen des Projektes soll eine Bewegungssegmentierung implementiert werden, welche auf Verkehrsszenen mit starrer Kamera angewandt wird. Zusätzlich sollen die segmentierten Objekte in eine der drei Klassen \textit{Fußgänger}, \textit{Radfahrer} und \textit{Auto} eingeordnet werden. Herausforderungen dabei sind (Teil-)Verdeckungen, variable Beleuchtung und Fehler des Aufnahmesystems (Lensflares).
 
 \subsection{Überblick über das Verfahren}
-Unser Ansatz besteht im Wesentlichen aus drei Schritten: Segmentierung, Klassifikation, Nachverarbeitung. Die Segmentierung erstellt mittels Backgroundsubstraction eine Vordergrundmaske, die durch eine Connected Component Analyse in einzelne Objekte gegliedert wird. Diese Objekte werden an einen Haar-Cascade-Klassifikator weitergereicht, der zuvor auf die drei o.g. Klassen trainiert wurde. Zum Schluss führen wir in einem Nachverarbeitungsschritt Objekte in einer kleinen Nachbarschaft zusammen, um Objektzersplitterung durch Fehlsegmentierung oder Teilverdeckung zu vermeiden.
+Unser Ansatz besteht im Wesentlichen aus den beiden Schritten Segmentierung und Klassifikation, denen jeweils eine Nachverarbeitung folgt. Die Segmentierung erstellt mittels Backgroundsubstraction eine Vordergrundmaske, die durch eine Connected Component Analyse in einzelne Objekte gegliedert wird. In einem Nachverarbeitungsschritt führen wir Objekte in einer kleinen Nachbarschaft zusammen, um Objektzersplitterung durch Fehlsegmentierung oder Teilverdeckung zu vermeiden. Dabei bleiben die erkannten Konturen erhalten, nur die bounding Boxes werden vereinigt. Die so gruppierten Objekte werden an einen Haar-Cascade-Klassifikator weitergereicht, der zuvor auf die drei o.g. Klassen trainiert wurde. Zum Schluss werden die Klassifikationsergebnisse in einem weiteren Nachverarbeitungsschritt mit vorherigen Klassifikationen für das selbe Objekt verglichen und als endgültiges Ergebnis wird die am häufigsten zugewiesene Klasse gewählt.
 
 \subsection{Verwendete Bibliotheken}
 Das Projekt wurde in der Programmiersprache C++, nach Standard ISO/IEC 14882:2011 aka C++11 umgesetzt. Abgesehen von der STL wurde als einzige Bibliothek OpenCV \cite{opencv} in Version 2.4.8/2.4.9 eingesetzt. Um plattformunabhängig entwickeln zu können wurde CMake \cite{cmake} als Meta-Buildsystem genutzt. Die Projektverwaltung erfolgte mittels Git \cite{git} auf GitHub \cite{github}.
@@ -504,10 +509,12 @@ Das Projekt wurde in der Programmiersprache C++, nach Standard ISO/IEC 14882:201
 
 \begin{figure}
 \includegraphics[width=0.5\textwidth]{ds10_contour}
-\caption{Schwierige Segmentierung}
+\caption{Erfolgreiche Segmentierung bei schwierigen Verhältnissen}
 \end{figure}
 
-Für die Bewegungssegmentierung nutzen wir den von OpenCV bereitgestellten \textit{BackgroundSubstractorMOG2}, der das Gaussian Mixture Model nach dem Verfahren von Z. Zivkovic \cite{zivkovic} benutzt. Dabei verzichten wir jedoch auf die eingebaute Schattensegmentierung, da diese nicht zuverlässig genug für uns ist. Durch empirische Untersuchung haben sich folgende Parametereinstellungen als zufriedenstellend erwiesen:
+\subsubsection{Backgroundsubstraction}
+Für die Bewegungssegmentierung nutzen wir den von OpenCV bereitgestellten \textit{BackgroundSubstractorMOG2}, der das Gaussian Mixture Model (GMM) nach dem Verfahren von Z. Zivkovic \cite{zivkovic} benutzt. Dabei verzichten wir jedoch auf die eingebaute Schattensegmentierung, da diese nicht zuverlässig genug für uns ist. Der Backgroundsubstractor erstellt aus den letzten \textit{k} Frames mit HIlfe von GMM ein Hintergrundbild. Zwischen diesem und dem aktuellen Frame wird ein Differenzbild erstellt. In diesem Differenzbild sind Bereiche, in denen sich nichts bewegt hat dunkel und Bereiche in denen eine Bewegung stattgefunden hat sind hell. Durch eine Schwellenwertoperation erhält man so eine Maske, welche die bewegten Objekte segmentiert. Das Ergebnis ist in Abbildung \ref{fig:foreground} zu sehen.
+Durch empirische Untersuchung haben sich folgende Parametereinstellungen als zufriedenstellend erwiesen:
 \begin{itemize}
 	\item nmixtures = 10
 	\item backgroundRatio = 0.9
@@ -515,10 +522,25 @@ Für die Bewegungssegmentierung nutzen wir den von OpenCV bereitgestellten \text
 	\item varThresholdGen = 55
 	\item varThreshold = 4
 \end{itemize}
-Um das Rauschen in der erstellten Maske zu unterdrücken filtern wir diese durch einen Medianfilter mit geringer Kernelgröße. Es kann passieren, dass nur Teile von einem Objekt segmentiert werden, die jedoch sehr nahe an einander liegen. Diese verbinden wir durch ein morphologisches closing.
-Damit wir nun aus der Maske einzelne Objekte erhalten, führen wir eine Connected Componend Analyse mittels der OpenCV-Funktion \textit{findContours} aus. Objekte die eine bestimmte Mindestgröße unterschrieten werden dabei entfernt. An den Klassifikator wird dann eine bounding Box für jede erkannte Kontur weitergereicht.
+Um das Rauschen in der erstellten Maske zu unterdrücken filtern wir diese durch einen Medianfilter mit geringer Kernelgröße. Bei der Backgroundsubstraction kann es vorkommen, dass nur Teile von einem Objekt segmentiert werden, die jedoch sehr nahe an einander liegen. Diese verbinden wir durch ein morphologisches closing.
+Damit wir nun aus der Maske einzelne Objekte erhalten, führen wir eine Connected Componend Analyse mittels der OpenCV-Funktion \textit{findContours} aus. Objekte die eine bestimmte Mindestgröße unterschreiten werden dabei entfernt, da diese als irrelevant zu erachten sind.
 
+\begin{figure}
+\label{fig:foreground}
+	\subfigure[Vordegrundmaske, graue Bereiche wurden als Schatten erkannt]{\includegraphics[width=0.2\textwidth]{trainds01_foregroundmask}}
+	\subfigure[Originalbild]{\includegraphics[width=0.2\textwidth]{trainds01_original}}
+	\caption{Ergebnis der Backfroundsubstraction}
+\end{figure}
 
+\subsubsection{Nachverarbeitung}
+Um das Problem von Teilverdeckungen zu beheben, haben wir einen einfachen Nachverarbeitungsschritt entwickelt, der ähnliche Aufgaben, wie ein aufwändigeres Tracken übernehmen soll. Dazu gehen wir davon aus, dass wir im vorherigen Frame ein Objekt \textit{A} mit der bounding Box \textit{b} detektiert haben. Im aktuellen Frame wird dann in einem Bereich \textit{b'=s*b} nach neu detektierten Objekten gesucht. Dabei ist \textit{s} ein non-uniformer Skalierungsfaktor, der in der Horizontalen größer ist, als in der Vertikalen, da wir davon ausgehen, dass sich die Objekte schneller in horizontaler, als in vertikaler Richtung bewegen. Liegt die bounding Box von einem oder mehreren neu detektierten Objekten komplett innerhalb von \textit{b'}, dann werden diese einem Gesamtobjekt zugeordnet, wie in Abbildung \ref{fig:trainds01_nachverarbeitung} zu sehen. Dabei kann es passieren, dass sich gruppierte Objekte über das gesamte Bild ausdehnen, daher wird eine Gruppierung aufglöst, sobald die gruppierten Objekte sich zu weit von einander entfernen. Die so entstandenen Objekte werden im Folgenden an den Klassifikator weiter gereicht.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.5\textwidth]{./trainds01_nachverarbeitung}
+\caption{in Lila ist der Suchbereich b' zu sehen, hellblau sind die bounding Boxes der neu detektierten Konturen, dunkelblau ist das gruppierte Obkjekt}
+\label{fig:trainds01_nachverarbeitung}
+\end{figure}
 
 \subsection{Klassifikation}
 
@@ -527,14 +549,9 @@ Damit wir nun aus der Maske einzelne Objekte erhalten, führen wir eine Connecte
 \caption{Ergebnis der Klassifikation auf mehreren ROI}
 \end{figure*}
 
-\subsubsection{Ursprüngliche Idee}
-
-Zu Anfang der Projektarbeit war uns der Gedanke gekommen, dass es recht elegant wäre auf komplizierte, zu trainierende Klassifikatoren zu verzichten und stattdessen lieber einen einfacheren und nachvollziehbaren Ansatz zu verfolgen: Klassifikation anhand von Seitenverhältnis und markanten Linien. Hintergrundgedanke war, dass die Kamera in den meisten Fällen einen kleinen Horizontalwinkel haben wird, so dass der Horizont - falls sichtbar - eine nahezu horizontale Linie auf dem Bild abbilden würde. Basierend auf dieser Annahme wären Menschen die laufen höher als breit. Autos dagegen breiter als hoch. Fahrradfahrer wären ähnlich der Autos breiter als hoch. Hier hätten die Linienkomponenten helfen sollen. Eine weitere Idee war mittels Template Matching die Reifen zu extrahieren und anhand von deren Größenverhältnis zum gesamten Objekt zwischen Fahrrad und Auto zu unterscheiden.
-Da wir uns mit der Linienkomponente nicht sehr sicher waren, die Detektion von sich auf die Kamera zu- und wegbewegenden Fahrrädern und Autos nicht in unser Konzept gepasst haben und wir nicht so viel Zeit zum herumexperimentieren hatten, entschieden wir uns für einen \textit{klassischen} Ansatz der mit gewisser Sicherheit zu einem soliden Ergebnis führen sollte.
-
 \subsubsection{Haar-Feature-Cascade-Classifier}
 
-Die Klassifikation ist schlussendlich über einen Haar-Feature-Cascade-Classifier implementiert.
+Die Klassifikation ist über einen Haar-Feature-Cascade-Classifier implementiert.
 Dafür wird für jede Klasse eine eigens trainierte Klassifikationsdatei im XML-Format benötigt. Da wir die Klassen \textit{Auto}, \textit{Mensch} und \textit{Fahrrad} unterscheiden wollen benötigen wir drei Klassifikationsdateien. Diese XML-Dateien werden bei Programmstart geladen und teilen dem Klassifikator die Parameter mit, auf die er reagieren soll. Anschließend können wir den Klassifikator auf eine beliebige Region-Of-Interest (ROI) anwenden. Als Ergebnis erhalten wir eine Liste von Bereichen innerhalb der ROI mit erkannten Objekten. Somit bekommen wir unter anderem ein binäres Ergebnis - \textit{gefunden} wenn die Liste mindestens einen Eintrag hat oder \textit{nicht gefunden} wenn die Liste leer ist. Der Vorteil an dieser Methode liegt darin, dass wir somit mehrere Objekte innerhalb einer gegebenen ROI erkennen können. Wenn wir uns allerdings sicher sind, dass die gegebene ROI nur ein Objekt enthalten kann, fällen wir das Urteil anhand der Schwierigkeit der Detektion der Klasse und Anzahl der gefundenen Bereiche. Somit entscheiden wir uns für die Klasse Fahrrad, sobald der Klassifikator mindestens ein Fahrrad gefunden hat, da dies für unseren Klassifikator die am schwierigsten zu detektierende Klasse ist. Dass auf den meisten Fahrrädern Menschen sitzen ist ein weiterer Grund die Klassifikation nach Menschen erst durchzuführen, wenn kein Fahrrad erkannt wurde.
 Wenn kein Fahhrad in der ROI gefunden wurde, wird anschließend nach Menschen gesucht und zuletzt nach Autos.
 
@@ -553,34 +570,35 @@ Dazu haben wir uns im wesentlichen an eine Anleitung\cite{Seo:Haartraining} von 
 Zusätzlich hat der Autor mit \textit{mergevec.cpp} und \textit{createtrainsamples.pl} zwei kleine Programme veröffentlicht, mit denen man sehr schnell Datensätze für Positiv- und Negativbilder erzeugen kann. Die so erzeugten Datensätze werden wiederum an das Programm \textit{opencv\_haartraining} gegeben, zusammen mit Parametern die im wesentlichen die Qualität und Laufzeit des Trainings bestimmen.
 Für das Training der Klassifikationsdatei für Autos haben wir ausschließlich Positivbilder aus den gegebenen Testdaten erzeugt. Für die Fahrräder haben wir zusätzlich zu den gegebenen Testdaten noch Fahrradbilder aus einem frei verfügbaren Datensatz\cite{Caltech256} als zusätzliche Positivbilder genutzt. In beiden Fällen wurde der Datensatz der Negativbilder aus einer größeren Bildersammlung sowie den Positivbildern der jeweils anderen Klassen erstellt.
 
-\subsection{Nachverarbeitung}
-Um das Problem von Teilverdeckungen zu beheben, haben wir einen einfachen Nachverarbeitungsschritt entwickelt, der ähnliche Aufgaben, wie ein aufwändigeres Tracken übernehmen soll. Dazu gehen wir davon aus, dass wir im vorherigen Frame ein Objekt \textit{A} mit der bounding Box \textit{b} detektiert haben. Im aktuellen Frame wird dann in einem Bereich \textit{b'=s*b} nach neu detektierten Objekten gesucht. Dabei ist \textit{s} ein non-uniformer Skalierungsfaktor, der in der horizontalen größer ist, als in der vertikalen, da wir davon ausgehen, dass sich die Objekte schneller in horizontaler, als in vertikaler Richtung bewegen. Liegt die bounding Box von einem oder mehreren neu detektierten Objekten komplett innerhalb von \textit{b'}, dann werden diese einem Gesamtobjekt zugeordnet. Dabei kann es passieren, dass sich gruppierte Objekte über das gesamte Bild ausdehnen. Daher wird eine Gruppierung aufglöst, sobald die gruppierten Objekte sich zu weit von einander entfernen.
+\subsubsection{Nachverarbeitung}
+In einem weiteren Nachverarbeitungsschritt wird für jedes klassifizierte Objekt im aktuellen Frame geprüft, wie oft es in vergangenen Frames als welche Klasse klassifiziert wurde. Wenn ein Objekt \textit{O} mehr als \textit{X} mal einer bestimmten Klasse \textit{C} zugewiesen wurde und es den anderen Klassen weniger oft zugewiesen wurde, dann wird das Objekt \textit{O} der Klasse \textit{C} zugewiesen, auch wenn es im aktuellen Frame anders klassifiziert wurde.
 
-Weiterhin wird in diesem Nachverarbeitungsschritt für jedes gruppierte Objekt im aktuellen Frame geprüft, wie oft es in vergangenen Frames als welche Klasse klassifiziert wurde. Wenn ein gruppiertes Objekt \textit{O} mehr als \textit{X} mal einer bestimmten Klasse \textit{C} zugewiesen wurde und es den anderen Klassen weniger oft zugewiesen wurde, dann wird das Objekt \textit{O} der Klasse \textit{C} zugewiesen, auch wenn es im aktuellen Frame anders kalssiefiziert wurde.
-
-\subsection{Verworfene Bestandteile}
+\section{Verworfene Bestandteile}
 Im laufe des Projektes wurden viele Verfahren getestet, um das Ziel zu erreichen. Die bisher beschriebenen haben sich dabei als am besten geeignet herausgestellt. In diesem Abschnitt möchten wir darauf eingehen, welche weiteren Verfahren getestet und danach wieder verworfen wurden und warum wir sie verworfen haben.
 
-\subsubsection{Optischer Fluss}
+\subsection{Optischer Fluss}
 Mit Hilfe eines dichten optischen Flusses, hatten wir uns erhofft sowohl die Segmentierung, als auch Teile des Trackens zu erledigen. Wir haben dazu mit der von OpenCV bereitgestellten Funktion \textit{calcOpticalFlowFarneback} experimentiert, jedoch keine passenden Parameter gefunden, die akzeptable Ergebnisse liefern. Da wir zu diesem Zeitpunkt bereits brauchbare Ergebnisse mit der Backgroundsubstraction erziehlt hatten, haben wir beschlossen unsere Zeit in die Verfeinerung dieses Verfahrens, sowie die Klassifizierung zu investieren. 
-\subsubsection{Tracking durch SURF Features}
-Als weiteren Ansatz zum Tracken haben wir mit SURF Features experimentiert um in einem Frame erkannte Objekte im nächsten Frame wider zu finden. Dies hat auch akzeptable Ergebnisse für Autos geliefert, da sich bei diesen die Features von Frame zu Frame nicht zu stark ändern. Bei Fußgängern und Radfahrern hingegen schlug dieser Ansatz komplett fehl.
+\subsection{Tracking durch SURF}
+Als weiteren Ansatz zum Tracken haben wir mit SURF (Speeded Up Robust Features) experimentiert um in einem Frame erkannte Objekte im nächsten Frame wieder zu finden. Dabei werden Features des erkannten Objektes und deren relative Position zueinander im vorherigen Frame extrahiert und versucht im aktuellen Frame in ähnlicher Anordnung wiederzufinden. Dies hat auch akzeptable Ergebnisse für Autos geliefert, da sich bei diesen die Features von Frame zu Frame nicht zu stark ändern. Bei Fußgängern und Radfahrern hingegen schlug dieser Ansatz komplett fehl, weshalb er wieder verworfen wurde.
+
+\subsection{Klassifikation anhand einfacher Merkmale}
+
+Zu Anfang der Projektarbeit war uns der Gedanke gekommen, dass es recht elegant wäre auf komplizierte, zu trainierende Klassifikatoren zu verzichten und stattdessen lieber einen einfacheren und nachvollziehbaren Ansatz zu verfolgen: Klassifikation anhand von Seitenverhältnis und markanten Linien. Hintergrundgedanke war, dass die Kamera in den meisten Fällen einen kleinen Horizontalwinkel haben wird, so dass der Horizont - falls sichtbar - eine nahezu horizontale Linie auf dem Bild abbilden würde. Basierend auf dieser Annahme wären Menschen die laufen höher als breit. Autos dagegen breiter als hoch. Fahrradfahrer wären ähnlich der Autos breiter als hoch. Hier hätten die Linienkomponenten helfen sollen. Eine weitere Idee war mittels Template Matching die Reifen zu extrahieren und anhand von deren Größenverhältnis zum gesamten Objekt zwischen Fahrrad und Auto zu unterscheiden.
+Da wir uns mit der Linienkomponente nicht sehr sicher waren, die Detektion von sich auf die Kamera zu- und wegbewegenden Fahrrädern und Autos nicht in unser Konzept gepasst haben und wir nicht so viel Zeit zum herumexperimentieren hatten, entschieden wir uns für einen \textit{klassischen} Ansatz der mit gewisser Sicherheit zu einem soliden Ergebnis führen sollte.
 
 
 
 \section{Evaluierung}
-
-\begin{figure}
-\includegraphics[width=0.5\textwidth]{ds13_car01}
-\caption{Erfolgreiche Segmentierung und Klassifikation}
-\end{figure}
-
 
 Die Evaluierung zeigt ein durchwachsenes Bild.
 Unser Ansatz hat auf den Datensätzen 3 bis 7 und 13 gut bis sehr gut funktioniert. Auf den restlichen Datensätzen hat unser Verfahren mittelgute bis schlechte Ergebnisse erzielt. Generell hat sich gezeigt, dass die Segmentierung meist gut bis sehr gut funktioniert, die Klassifkation dagegen nicht so robust ist.
 Vor allem wenn sich die Art des Datensatzes stark von den Trainingsdatensätzen unterscheidet, fallen starke Mängel in der Klassifikation auf. Bei den Testdatensätzen 8 bis 12 zeigt sich beispielsweise, dass der Klassifkator mit den Kamerapositionen nicht klarkommt, da mit keinen Positivbildern aus diesen Perspektiven trainiert wurde und somit der Klassifikator nur wenig Chancen hat, seine Arbeit erfolgreich zu erledigen.
 Andererseits zeigte sich, dass unser Verfahren sehr schnell ist und wir je nach Datensatz ein bis mehrere Bilder pro Sekunde mit der kompletten Pipeline an Berechnungen erhalten.
 
+\begin{figure}
+\includegraphics[width=0.5\textwidth]{ds13_car01}
+\caption{Erfolgreiche Klassifikation mit Fehlsegmentierung}
+\end{figure}
 
 \section{Schluss}
 
@@ -589,6 +607,7 @@ Wir haben es geschafft mit einfachen Mitteln einen verhältnismäßig schnellen 
 \subsection{Ausblick}
 Mit besser trainierten Daten und einem Austausch der Ergebnisse zwischen Klassifikator und Segmentierungsroutine wären deutlich bessere Ergebnisse erzielbar.
 Für perfekte Ergebnisse müssten allerdings die Algorithmen umgestellt werden. Je nach einsetzbarem Rechenaufwand pro Bild könnte man robustere Verfahren nutzen, sowohl für die Segmentierung und Objektverfolgung, als auch die Klassifikation. So wäre beispielsweise eine Median-basierte Hintergrundbilderzeugung ein Grundstein für eine robustere Segmentierung, würde allerdings gleichzeitig einen enorm höheren Rechenaufwand benötigen.
+Außerdem könnte man die Segmentierten Konturen tracken um so plötzliche Veränderungen der Kontur einzuschränken.
 Bei der Klassifikation müsste man für unterschiedliche Klassen unterschiedliche Verfahren nutzen. Für Autos könnte man das aktuelle Verfahren, d.h. den Haar-Feature-Cascade-Classifier beibehalten. Für Menschen und Fahrräder könnte man beispielsweise auf einen HOG-Cascade-Classifier wechseln um bessere Ergebnisse zu erzielen.
 Zusätzlich sollte man - wie bereits erwähnt - die Ergebnisse von Klassifikator und Segmentierungsroutine ineinander einfließen lassen. So könnte man zu Beginn einer Sequenz die Klassifikatoren auf dem gesamten Bild nach potentiellen Objekten suchen lassen. Anschließen merkt man sich diese Region-Of-Interests für potentielle Bewegungen vor. Weiterhin könnte man bei getrackten Objekten die Klassifikation robuster gestalten, indem man sich für ein Objekt die detektierte Klasse merkt und einen sprunghaften Wechsel der Klasse von getrackten Objekten verhindert.
 
