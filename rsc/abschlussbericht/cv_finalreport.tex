@@ -320,13 +320,18 @@
 % (Unless specifically asked to do so by the journal or conference you plan
 % to submit to, of course. )
 
-\usepackage{subfigure}
-\usepackage{hyperref}
+%\usepackage{subfigure}
+%\usepackage{hyperref}
+
+%\usepackage{subfigure}
+%\usepackage{hyperref}
 
 %%% Doc: ftp://tug.ctan.org/pub/tex-archive/.....ntrib/oberdiek/hypcap.pdf
 % Links auf Gleitumgebungen springen nicht zur Beschriftung,
 % sondern zum Anfang der Gleitumgebung
-   \usepackage[figure]{hypcap} 
+   %\usepackage[figure]{hypcap} 
+   
+\usepackage{subcaption}
 
 
 % correct bad hyphenation here
@@ -533,22 +538,47 @@ Durch empirische Untersuchung haben sich folgende Parametereinstellungen als zuf
 Um das Rauschen in der erstellten Maske zu unterdrücken filtern wir diese durch einen Medianfilter mit geringer Kernelgröße. Bei der Backgroundsubstraction kann es vorkommen, dass nur Teile von einem Objekt segmentiert werden, die jedoch sehr nahe an einander liegen. Diese verbinden wir durch ein morphologisches Closing.
 Damit wir nun aus der Maske einzelne Objekte erhalten, führen wir eine Connected Componend Analyse mittels der OpenCV-Funktion \textit{findContours} aus. Objekte die eine bestimmte Mindestgröße unterschreiten werden dabei entfernt, da diese als irrelevant zu erachten sind.
 
+
+%\begin{minipage}[hbt]{5cm}
+%\centering
+%\includegraphics[width=5cm]{trainds01_foregroundmask}
+%%\caption{Bild1}
+%\label{Bild1}
+%\end{minipage}
+%\hfill
+%\begin{minipage}[hbt]{5cm}
+%\centering
+%\includegraphics[width=5cm]{trainds01_original}
+%%\caption{Bild2}
+%\label{Bild2}
+%\end{minipage}
+
+
 \begin{figure}
-\label{fig:foreground}
-	\subfigure[Vordergrundmaske, graue Bereiche wurden als Schatten erkannt]{\includegraphics[width=0.2\textwidth]{trainds01_foregroundmask}}
-	\subfigure[Originalbild]{\includegraphics[width=0.2\textwidth]{trainds01_original}}
+	\centering
+	\begin{subfigure}[t]{0.23\textwidth}
+		\includegraphics[width=\textwidth]{trainds01_original}
+		\subcaption{Originalbild}
+		\label{fig:sub2}
+	\end{subfigure}
+	\begin{subfigure}[t]{0.23\textwidth}
+		\includegraphics[width=\textwidth]{trainds01_foregroundmask}
+		\subcaption{Vordergrundmaske, graue Bereiche wurden als Schatten erkannt}
+		\label{fig:sub1}
+	\end{subfigure}	
 	\caption{Ergebnis der Backgroundsubstraction}
+	\label{fig:test}
 \end{figure}
 
 \subsubsection{Nachverarbeitung}
 
-Um das Problem von Teilverdeckungen zu beheben, haben wir einen einfachen Nachverarbeitungsschritt entwickelt, der ähnliche Aufgaben, wie ein aufwändigeres Tracking übernehmen soll. Dazu gehen wir davon aus, dass wir im vorherigen Frame ein Objekt \textit{A} mit der Bounding Box \textit{b} detektiert haben. Im aktuellen Frame wird dann in einem Bereich \textit{b'=s*b} nach neu detektierten Objekten gesucht. Dabei ist \textit{s} ein non-uniformer Skalierungsfaktor, der in der Horizontalen größer ist, als in der Vertikalen, da wir davon ausgehen, dass sich Objekte schneller in horizontaler, als in vertikaler Richtung bewegen. Liegt die Bounding Box von einem oder mehreren neu detektierten Objekten komplett innerhalb von \textit{b'}, dann werden diese einem Gesamtobjekt zugeordnet, wie in Abbildung \ref{fig:trainds01_nachverarbeitung} zu sehen. Dabei kann es passieren, dass sich gruppierte Objekte über das gesamte Bild ausdehnen, daher wird eine Gruppierung aufgelöst, sobald die gruppierten Objekte sich zu weit voneinander entfernen. Die so entstehenden Objekte werden im Folgenden an den Klassifikator weiter gereicht.
+Um das Problem von Teilverdeckungen zu beheben, haben wir einen einfachen Nachverarbeitungsschritt entwickelt, der ähnliche Aufgaben, wie ein aufwändigeres Tracking übernehmen soll. Dazu gehen wir davon aus, dass wir im vorherigen Frame ein Objekt \textit{A} mit der Bounding Box \textit{b} detektiert haben. Im aktuellen Frame wird dann in einem Bereich \textit{b'=s*b} nach neu detektierten Objekten gesucht. Dabei ist \textit{s} ein non-uniformer Skalierungsfaktor, der in der Horizontalen größer ist, als in der Vertikalen, da wir davon ausgehen, dass sich die Objekte schneller in horizontaler, als in vertikaler Richtung bewegen. Liegt die Bounding Box von einem oder mehreren neu detektierten Objekten komplett innerhalb von \textit{b'}, dann werden diese einem Gesamtobjekt zugeordnet, wie in Abbildung \ref{fig:trainds01_nachverarbeitung} zu sehen. Dabei bleiben die erkannten Konturen erhalten, nur die Bounding Boxes werden vereinigt. Durch diese Neugruppierung kann es passieren, dass sich gruppierte Objekte über das gesamte Bild ausdehnen, daher wird eine Gruppierung aufgelöst, sobald die gruppierten Objekte sich zu weit von einander entfernen. Die so entstandenen Objekte werden im Folgenden an den Klassifikator weiter gereicht.
 
 \begin{figure}
-\centering
-\includegraphics[width=0.5\textwidth]{./trainds01_nachverarbeitung}
-\caption{In Lila ist der Suchbereich b' zu sehen, hellblau sind die Bounding Boxes der neu detektierten Konturen, dunkelblau ist das gruppierte Objekt}
-\label{fig:trainds01_nachverarbeitung}
+	\centering
+	\includegraphics[width=0.5\textwidth]{trainds01_nachverarbeitung}
+	\caption{In Lila ist der Suchbereich b' zu sehen, hellblau sind die Bounding Boxes der neu detektierten Konturen, dunkelblau ist das gruppierte Objekt}
+	\label{fig:trainds01_nachverarbeitung}
 \end{figure}
 
 \subsection{Klassifikation}
