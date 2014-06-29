@@ -515,7 +515,7 @@ Das Projekt wurde in der Programmiersprache C++, nach Standard ISO/IEC 14882:201
 \end{figure}
 
 \subsubsection{Backgroundsubstraction}
-Für die Bewegungssegmentierung nutzen wir den von OpenCV bereitgestellten \textit{BackgroundSubstractorMOG2}, der das Gaussian Mixture Model (GMM) nach dem Verfahren von Z. Zivkovic \cite{zivkovic} benutzt. Dabei verzichten wir jedoch auf die eingebaute Schattensegmentierung, da diese nicht zuverlässig genug für uns ist. Der Backgroundsubstractor erstellt aus den letzten \textit{k} Frames mit HIlfe von GMM ein Hintergrundbild. Zwischen diesem und dem aktuellen Frame wird ein Differenzbild erstellt. In diesem Differenzbild sind Bereiche in denen sich nichts bewegt hat dunkel und Bereiche in denen eine Bewegung stattgefunden hat, sind hell. Durch eine Schwellenwertoperation erhält man so eine Maske, welche die bewegten Objekte segmentiert. Das Ergebnis ist in Abbildung \ref{fig:foreground} zu sehen.
+Für die Bewegungssegmentierung nutzen wir den von OpenCV bereitgestellten \textit{BackgroundSubstractorMOG2}, der das Gaussian Mixture Model (GMM) nach dem Verfahren von Z. Zivkovic \cite{zivkovic} benutzt. Dabei verzichten wir jedoch auf die eingebaute Schattensegmentierung, da diese nicht zuverlässig genug für uns ist. Der Backgroundsubstractor erstellt aus den letzten \textit{k} Frames mit HIlfe von GMM ein Hintergrundbild. Zwischen diesem und dem aktuellen Frame wird ein Differenzbild erstellt. In diesem Differenzbild sind Bereiche in denen sich nichts bewegt hat dunkel und Bereiche in denen eine Bewegung stattgefunden hat, sind hell. Durch eine Schwellenwertoperation erhält man so eine Maske, welche die bewegten Objekte segmentiert. Das Ergebnis ist in Abbildung \ref{fig:foregroundmask} zu sehen.
 Durch empirische Untersuchung haben sich folgende Parametereinstellungen als zufriedenstellend erwiesen:
 \begin{itemize}
 	\item nmixtures = 10
@@ -535,14 +535,14 @@ Damit wir nun aus der Maske einzelne Objekte erhalten, führen wir eine Connecte
 %\setlength{\abovecaptionskip}{15pt plus 5pt minus 10pt}
   \includegraphics[width=1\linewidth]{trainds01_foregroundmask}
   \caption{Vordergrundmaske, grau stellt den detektierten Schatten dar}
-  \label{fig:sub1}
+  \label{fig:foregroundmask}
 \end{subfigure}
 \begin{subfigure}[t]{.23\textwidth}
 \centering
 %\setlength{\abovecaptionskip}{25pt plus 15pt minus 15pt}
   \includegraphics[width=1\linewidth]{trainds01_original}
   \caption{Originalbild}
-  \label{fig:sub2}
+  \label{fig:foreground_original}
 \end{subfigure}
 \caption{Ergebnis der Backgroundsubstraction}
 \label{fig:test}
